@@ -1,0 +1,31 @@
+server:
+  port: ${PORT:8082}
+  ssl:
+    enabled: false
+spring:
+  datasource:
+    url: ${JDBC_URL}
+    username: ${JDBC_USERNAME}
+    password: ${JDBC_PASSWORD}
+    driver-class-name: 'org.postgresql.Driver'
+    auto-commit: false
+  flyway:
+    out-of-order: true
+    table: "ejbca_schema_history"
+    schemas: ${DB_SCHEMA:ejbca}
+  jpa:
+    properties:
+      hibernate.default_schema: ${DB_SCHEMA:ejbca}
+ejbca:
+  timeout:
+    connect: 500
+    request: 1500
+management:
+  endpoints:
+    jmx:
+      exposure:
+        exclude: '*'
+    web:
+      base-path: '/'
+      exposure:
+        include: health, info
