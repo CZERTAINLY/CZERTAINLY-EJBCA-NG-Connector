@@ -9,7 +9,6 @@ import com.czertainly.api.model.connector.v2.CertificateSignRequestDto;
 import com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl;
 import com.czertainly.ca.connector.ejbca.api.CertificateControllerImpl;
 import com.czertainly.ca.connector.ejbca.enums.UsernameGenMethod;
-import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.CertificateEjbcaService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
 import com.czertainly.ca.connector.ejbca.util.CertificateUtil;
@@ -133,7 +132,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
 
     private String generateUsername(String usernameGenMethod, String usernamePrefix, String usernamePostfix, JcaPKCS10CertificationRequest csr) throws Exception {
         // the csr comes Base64 encoded
-        String username = null;
+        String username;
         if (usernameGenMethod.equals(UsernameGenMethod.RANDOM.name())) {
             SecureRandom random = new SecureRandom();
             byte[] r = new byte[8];
@@ -149,8 +148,13 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
             logger.debug(message);
             throw new Exception(message);
         }
-        if (username != null && !username.isEmpty()) {
-            username = usernamePrefix + username + usernamePostfix;
+        if (StringUtils.isNotBlank(username)) {
+            if (StringUtils.isNotBlank(usernamePrefix)) {
+                username = usernamePrefix + username;
+            }
+            if (StringUtils.isNotBlank(usernamePostfix)) {
+                username = username + usernamePostfix;
+            }
         } else {
             String message = "Username is null or empty, username was not properly generated";
             logger.debug(message);
