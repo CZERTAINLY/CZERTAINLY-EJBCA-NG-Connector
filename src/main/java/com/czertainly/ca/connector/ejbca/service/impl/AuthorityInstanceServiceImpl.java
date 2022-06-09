@@ -13,22 +13,33 @@ import com.czertainly.api.model.core.credential.CredentialDto;
 import com.czertainly.ca.connector.ejbca.config.ApplicationConfig;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
+import com.czertainly.ca.connector.ejbca.rest.EjbcaRestApiClient;
 import com.czertainly.ca.connector.ejbca.service.AttributeService;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.ws.EjbcaWS;
 import com.czertainly.ca.connector.ejbca.ws.EjbcaWSService;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import com.czertainly.core.util.KeyStoreUtils;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.client.reactive.ClientHttpConnector;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 
 import javax.net.ssl.*;
 import javax.xml.ws.BindingProvider;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
@@ -177,6 +188,14 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
     }
 
     @Override
+    public EjbcaWS getConnectionName(String name) throws NotFoundException {
+        AuthorityInstance instance = authorityInstanceRepository
+                .findByName(name)
+                .orElseThrow(() -> new NotFoundException(AuthorityInstance.class, name));
+        return getConnection(instance);
+    }
+
+    @Override
     public synchronized EjbcaWS getConnection(AuthorityInstance instance) {
         EjbcaWS port = connectionsCache.get(instance.getId());
         if (port != null) {
@@ -245,5 +264,38 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to initialize SSLSocketFactory.", e);
         }
+    }
+
+    @Override
+    public WebClient getRestApiConnection(String uuid) throws NotFoundException {
+        AuthorityInstance instance = authorityInstanceRepository
+                .findByUuid(uuid)
+                .orElseThrow(() -> new NotFoundException(AuthorityInstance.class, uuid));
+        return getRestApiConnection(instance);
+    }
+
+    private WebClient getRestApiConnection(AuthorityInstance instance) {
+//        List<AttributeDefinition> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData());
+//
+//        WebClient webClient = WebClient.builder().build();
+//        SslContext sslContext = EjbcaRestApiClient.createSslContext(attributes);
+//
+//        HttpClient httpClient = HttpClient.create().secure(t -> t.sslContext(sslContext));
+//        webClient.mutate().clientConnector(new ReactorClientHttpConnector(httpClient)).build();
+//
+//        ClientHttpConnector httpConnector = HttpClient.create().secure(t -> t.sslContext(sslContext));
+//        return WebClient.builder().clientConnector(httpClient).build();
+
+        List<AttributeDefinition> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData());
+
+        SslContext sslContext = EjbcaRestApiClient.createSslContext(attributes);
+
+        HttpClient httpClient = HttpClient.create().secure(t -> t.sslContext(sslContext));
+
+        WebClient webClient = WebClient
+                .builder()
+                .clientConnector(new ReactorClientHttpConnector(httpClient)).build();
+
+        return webClient;
     }
 }

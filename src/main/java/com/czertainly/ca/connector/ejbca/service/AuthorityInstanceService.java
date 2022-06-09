@@ -6,6 +6,7 @@ import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceDto
 import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceRequestDto;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.ws.EjbcaWS;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
 
@@ -18,6 +19,9 @@ public interface AuthorityInstanceService {
     void removeAuthorityInstance(String uuid) throws NotFoundException;
 
     EjbcaWS getConnection(String uuid) throws NotFoundException;
+    EjbcaWS getConnectionName(String name) throws NotFoundException;
 
     EjbcaWS getConnection(AuthorityInstance instance);
+
+    WebClient getRestApiConnection(String uuid) throws NotFoundException;
 }

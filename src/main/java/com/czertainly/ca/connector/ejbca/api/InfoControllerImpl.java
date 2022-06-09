@@ -27,7 +27,16 @@ public class InfoControllerImpl implements InfoController {
         logger.info("Listing the end points for EJBCA NG connector");
         List<String> kinds = List.of("EJBCA");
         List<InfoResponse> functions = new ArrayList<>();
-        functions.add(new InfoResponse(kinds, FunctionGroupCode.AUTHORITY_PROVIDER, endpointsListener.getEndpoints()));
+        functions.add(new InfoResponse(
+                kinds,
+                FunctionGroupCode.AUTHORITY_PROVIDER,
+                endpointsListener.getEndpoints(FunctionGroupCode.AUTHORITY_PROVIDER))
+        );
+        functions.add(new InfoResponse(
+                kinds,
+                FunctionGroupCode.DISCOVERY_PROVIDER,
+                endpointsListener.getEndpoints(FunctionGroupCode.DISCOVERY_PROVIDER))
+        );
 
         return functions;
     }

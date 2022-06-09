@@ -7,16 +7,28 @@ import com.czertainly.api.model.common.attribute.RequestAttributeDto;
 import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.ca.connector.ejbca.api.CertificateControllerImpl;
+import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.request.Pagination;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificatesRestRequestV2;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.response.SearchCertificatesRestResponseV2;
+import com.czertainly.ca.connector.ejbca.rest.EjbcaRestApiClient;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
 import com.czertainly.ca.connector.ejbca.util.EjbcaUtils;
+import com.czertainly.ca.connector.ejbca.util.EjbcaVersion;
 import com.czertainly.ca.connector.ejbca.ws.*;
 import com.czertainly.core.util.AttributeDefinitionUtils;
+import io.netty.handler.ssl.SslContext;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -149,6 +161,38 @@ public class EjbcaServiceImpl implements EjbcaService {
             throw new IllegalStateException(e);
         }
     }
+
+    @Override
+    public EjbcaVersion getEjbcaVersion(String authorityInstanceUuid) throws NotFoundException {
+        EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityInstanceUuid);
+        String ejbcaVersion = ejbcaWS.getEjbcaVersion();
+        return new EjbcaVersion(ejbcaVersion);
+    }
+
+    @Override
+    public void searchCertificates(String authorityInstanceUuid, String restUrl) throws NotFoundException {
+       WebClient ejbcaWC = authorityInstanceService.getRestApiConnection(authorityInstanceUuid);
+
+       Pagination pagination = new Pagination();
+       pagination.setPageSize(100);
+       pagination.setCurrentPage(1);
+
+       SearchCertificatesRestRequestV2 request = new SearchCertificatesRestRequestV2();
+       request.setPagination(pagination);
+
+       SearchCertificatesRestResponseV2 response = ejbcaWC.post()
+               .uri(restUrl)
+               .contentType(MediaType.APPLICATION_JSON)
+               .bodyValue(request)
+               .retrieve()
+               .bodyToMono(SearchCertificatesRestResponseV2.class)
+               .block();
+
+       if (response.getPaginationSummary().getCurrentPage() < response.getPaginationSummary().getPageSize()) {
+           throw new NotFoundException("Certificates");
+       }
+    }
+
 
     public UserDataVOWS getUser(EjbcaWS ejbcaWS, String username) throws NotFoundException {
         UserMatch userMatch = EjbcaUtils.prepareUsernameMatch(username);
