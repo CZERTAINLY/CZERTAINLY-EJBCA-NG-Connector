@@ -4,6 +4,7 @@ import com.czertainly.api.model.common.NameAndIdDto;
 import com.czertainly.api.model.common.attribute.ResponseAttributeDto;
 import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
 import com.czertainly.api.model.core.authority.*;
+import com.czertainly.ca.connector.ejbca.util.LocalAttributeUtil;
 import com.czertainly.ca.connector.ejbca.ws.*;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.EndEntityEjbcaService;
@@ -179,13 +180,13 @@ public class EndEntityEjbcaServiceImpl implements EndEntityEjbcaService {
         //String tokenType = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_TOKEN_TYPE, raProfileAttrs);
         //user.setTokenType(tokenType);
 
-        NameAndIdDto endEntityProfile = AttributeDefinitionUtils.getNameAndIdData(ATTRIBUTE_END_ENTITY_PROFILE, raProfileAttrs);
+        NameAndIdDto endEntityProfile = LocalAttributeUtil.getNameAndIdData(ATTRIBUTE_END_ENTITY_PROFILE, raProfileAttrs);
         user.setEndEntityProfileName(endEntityProfile.getName());
 
-        NameAndIdDto certificateProfile = AttributeDefinitionUtils.getNameAndIdData(ATTRIBUTE_CERTIFICATE_PROFILE, raProfileAttrs);
+        NameAndIdDto certificateProfile = LocalAttributeUtil.getNameAndIdData(ATTRIBUTE_CERTIFICATE_PROFILE, raProfileAttrs);
         user.setCertificateProfileName(certificateProfile.getName());
 
-        NameAndIdDto ca = AttributeDefinitionUtils.getNameAndIdData(ATTRIBUTE_CERTIFICATION_AUTHORITY, raProfileAttrs);
+        NameAndIdDto ca = LocalAttributeUtil.getNameAndIdData(ATTRIBUTE_CERTIFICATION_AUTHORITY, raProfileAttrs);
         user.setCaName(ca.getName());
 
         Boolean sendNotifications = (Boolean) AttributeDefinitionUtils.getAttributeContent(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs, BaseAttributeContent.class).getValue();
