@@ -1,7 +1,8 @@
 package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.model.common.NameAndIdDto;
-import com.czertainly.api.model.common.ResponseAttributeDto;
+import com.czertainly.api.model.common.attribute.ResponseAttributeDto;
+import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
 import com.czertainly.api.model.core.authority.*;
 import com.czertainly.ca.connector.ejbca.ws.*;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
@@ -27,6 +28,10 @@ import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerI
 public class EndEntityEjbcaServiceImpl implements EndEntityEjbcaService {
 
     @Autowired
+    public void setAuthorityInstanceService(AuthorityInstanceService authorityInstanceService) {
+        this.authorityInstanceService = authorityInstanceService;
+    }
+
     private AuthorityInstanceService authorityInstanceService;
 
     @Override
@@ -174,21 +179,24 @@ public class EndEntityEjbcaServiceImpl implements EndEntityEjbcaService {
         //String tokenType = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_TOKEN_TYPE, raProfileAttrs);
         //user.setTokenType(tokenType);
 
-        NameAndIdDto endEntityProfile = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_END_ENTITY_PROFILE, raProfileAttrs);
+        NameAndIdDto endEntityProfile = AttributeDefinitionUtils.getNameAndIdData(ATTRIBUTE_END_ENTITY_PROFILE, raProfileAttrs);
         user.setEndEntityProfileName(endEntityProfile.getName());
 
-        NameAndIdDto certificateProfile = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_CERTIFICATE_PROFILE, raProfileAttrs);
+        NameAndIdDto certificateProfile = AttributeDefinitionUtils.getNameAndIdData(ATTRIBUTE_CERTIFICATE_PROFILE, raProfileAttrs);
         user.setCertificateProfileName(certificateProfile.getName());
 
-        NameAndIdDto ca = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_CERTIFICATION_AUTHORITY, raProfileAttrs);
+        NameAndIdDto ca = AttributeDefinitionUtils.getNameAndIdData(ATTRIBUTE_CERTIFICATION_AUTHORITY, raProfileAttrs);
         user.setCaName(ca.getName());
 
-        boolean sendNotifications = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs);
-        user.setSendNotification(sendNotifications);
+        Boolean sendNotifications = (Boolean) AttributeDefinitionUtils.getAttributeContent(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs, BaseAttributeContent.class).getValue();
+        if (sendNotifications != null) {
+            user.setSendNotification(sendNotifications);
+        }
 
-        boolean keyRecoverable = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_KEY_RECOVERABLE, raProfileAttrs);
-        user.setKeyRecoverable(keyRecoverable);
-
+        Boolean keyRecoverable = (Boolean) AttributeDefinitionUtils.getAttributeContent(ATTRIBUTE_KEY_RECOVERABLE, raProfileAttrs, BaseAttributeContent.class).getValue();
+        if (keyRecoverable != null) {
+            user.setKeyRecoverable(keyRecoverable);
+        }
 
         if (StringUtils.isNotBlank(username)) {
             user.setUsername(username);

@@ -2,7 +2,9 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.exception.AlreadyExistException;
 import com.czertainly.api.exception.NotFoundException;
-import com.czertainly.api.model.common.RequestAttributeDto;
+import com.czertainly.api.model.common.NameAndIdDto;
+import com.czertainly.api.model.common.attribute.RequestAttributeDto;
+import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.ca.connector.ejbca.api.CertificateControllerImpl;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
@@ -29,6 +31,10 @@ import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerI
 public class EjbcaServiceImpl implements EjbcaService {
 
     @Autowired
+    public void setAuthorityInstanceService(AuthorityInstanceService authorityInstanceService) {
+        this.authorityInstanceService = authorityInstanceService;
+    }
+
     private AuthorityInstanceService authorityInstanceService;
 
     @Override
@@ -162,17 +168,17 @@ public class EjbcaServiceImpl implements EjbcaService {
     private void prepareEndEntity(UserDataVOWS user, List<RequestAttributeDto> raProfileAttrs, List<RequestAttributeDto> issueAttrs) {
         setUserProfiles(user, raProfileAttrs);
 
-        String email = AttributeDefinitionUtils.getAttributeValue(CertificateControllerImpl.ATTRIBUTE_EMAIL, issueAttrs);
+        String email = (String) AttributeDefinitionUtils.getAttributeContent(CertificateControllerImpl.ATTRIBUTE_EMAIL, issueAttrs, BaseAttributeContent.class).getValue();
         if (StringUtils.isNotBlank(email)) {
             user.setEmail(email);
         }
 
-        String san = AttributeDefinitionUtils.getAttributeValue(CertificateControllerImpl.ATTRIBUTE_SAN, issueAttrs);
+        String san = (String) AttributeDefinitionUtils.getAttributeContent(CertificateControllerImpl.ATTRIBUTE_SAN, issueAttrs, BaseAttributeContent.class).getValue();
         if (StringUtils.isNotBlank(san)) {
             user.setSubjectAltName(san);
         }
 
-        String extension = AttributeDefinitionUtils.getAttributeValue(CertificateControllerImpl.ATTRIBUTE_EXTENSION, issueAttrs);
+        String extension = (String) AttributeDefinitionUtils.getAttributeContent(CertificateControllerImpl.ATTRIBUTE_EXTENSION, issueAttrs, BaseAttributeContent.class).getValue();
         setUserExtensions(user, extension);
     }
 
@@ -198,26 +204,26 @@ public class EjbcaServiceImpl implements EjbcaService {
         //user.setTokenType(tokenType);
         user.setTokenType("USERGENERATED");
 
-        Map<Integer, String> endEntityProfile = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_END_ENTITY_PROFILE, raProfileAttrs);
-        user.setEndEntityProfileName(endEntityProfile.get("name"));
+        NameAndIdDto endEntityProfile = AttributeDefinitionUtils.getNameAndIdData(ATTRIBUTE_END_ENTITY_PROFILE, raProfileAttrs);
+        user.setEndEntityProfileName(endEntityProfile.getName());
 
-        Map<Integer, String> certificateProfile = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_CERTIFICATE_PROFILE, raProfileAttrs);
-        user.setCertificateProfileName(certificateProfile.get("name"));
+        NameAndIdDto certificateProfile = AttributeDefinitionUtils.getNameAndIdData(ATTRIBUTE_CERTIFICATE_PROFILE, raProfileAttrs);
+        user.setCertificateProfileName(certificateProfile.getName());
 
-        Map<Integer, String> ca = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_CERTIFICATION_AUTHORITY, raProfileAttrs);
-        user.setCaName(ca.get("name"));
+        NameAndIdDto ca = AttributeDefinitionUtils.getNameAndIdData(ATTRIBUTE_CERTIFICATION_AUTHORITY, raProfileAttrs);
+        user.setCaName(ca.getName());
 
         boolean sendNotifications = false;
-        Object value = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs);
+        Boolean value = (Boolean) AttributeDefinitionUtils.getAttributeContent(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs, BaseAttributeContent.class).getValue();
         if (value != null) {
-            sendNotifications = (boolean) value;
+            sendNotifications = value;
         }
         user.setSendNotification(sendNotifications);
 
         boolean keyRecoverable = false;
-        value = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_KEY_RECOVERABLE, raProfileAttrs);
+        value = (Boolean) AttributeDefinitionUtils.getAttributeContent(ATTRIBUTE_KEY_RECOVERABLE, raProfileAttrs, BaseAttributeContent.class).getValue();
         if (value != null) {
-            keyRecoverable = (boolean) value;
+            keyRecoverable = value;
         }
         user.setKeyRecoverable(keyRecoverable);
     }

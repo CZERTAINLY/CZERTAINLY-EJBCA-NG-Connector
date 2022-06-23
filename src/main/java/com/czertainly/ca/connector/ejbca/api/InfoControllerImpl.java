@@ -16,6 +16,10 @@ public class InfoControllerImpl implements InfoController {
     private static final Logger logger = LoggerFactory.getLogger(InfoControllerImpl.class);
 
     @Autowired
+    public void setEndpointsListener(EndpointsListener endpointsListener) {
+        this.endpointsListener = endpointsListener;
+    }
+
     private EndpointsListener endpointsListener;
 
     @Override
