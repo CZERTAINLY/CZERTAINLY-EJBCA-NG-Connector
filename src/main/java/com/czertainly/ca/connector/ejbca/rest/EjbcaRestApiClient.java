@@ -4,6 +4,7 @@ import com.czertainly.api.clients.BaseApiClient;
 import com.czertainly.api.exception.*;
 import com.czertainly.api.model.common.AttributeDefinition;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.response.ExceptionErrorRestResponse;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import com.czertainly.core.util.KeyStoreUtils;
 import io.netty.handler.ssl.SslContext;
@@ -124,28 +125,8 @@ public abstract class EjbcaRestApiClient {
     }
 
     private static Mono<ClientResponse> handleHttpExceptions(ClientResponse clientResponse) {
-        if (HttpStatus.UNPROCESSABLE_ENTITY.equals(clientResponse.statusCode())) {
-            return clientResponse.bodyToMono(ERROR_LIST_TYPE_REF).flatMap(body ->
-                    Mono.error(new ValidationException(body.stream()
-                                    .map(ValidationError::create)
-                                    .collect(Collectors.toList())
-                            )
-                    )
-            );
-        }
-        if (HttpStatus.NOT_FOUND.equals(clientResponse.statusCode())) {
-            return clientResponse.bodyToMono(String.class)
-                    .flatMap(body -> Mono.error(new NotFoundException(body)));
-        }
-        if (clientResponse.statusCode().is4xxClientError()) {
-            return clientResponse.bodyToMono(String.class)
-                    .flatMap(body -> Mono.error(new ConnectorClientException(body, clientResponse.statusCode())));
-        }
-        if (clientResponse.statusCode().is5xxServerError()) {
-            return clientResponse.bodyToMono(String.class)
-                    .flatMap(body -> Mono.error(new ConnectorServerException(body, clientResponse.statusCode())));
-        }
-        return Mono.just(clientResponse);
+        return clientResponse.bodyToMono(ExceptionErrorRestResponse.class)
+                .flatMap(body -> Mono.error(new ConnectorClientException(body.getErrorMessage(), clientResponse.statusCode())));
     }
 
     public static <T, R> R processRequest(Function<T, R> func, T request) {

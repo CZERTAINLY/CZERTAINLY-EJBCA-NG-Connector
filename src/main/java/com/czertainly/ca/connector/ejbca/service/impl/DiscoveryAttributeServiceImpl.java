@@ -30,11 +30,13 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
     public static final String ATTRIBUTE_EJBCA_INSTANCE = "ejbcaInstance";
     public static final String ATTRIBUTE_EJBCA_VERSION = "ejbcaVersion";
     public static final String ATTRIBUTE_END_ENTITY_PROFILE = "endEntityProfile";
+    public static final String ATTRIBUTE_EJBCA_RESTAPI_URL = "ejbcaRestApiUrl";
 
 
     public static final String ATTRIBUTE_EJBCA_INSTANCE_LABEL = "EJBCA instance";
     public static final String ATTRIBUTE_EJBCA_VERSION_LABEL = "EJBCA version";
     public static final String ATTRIBUTE_END_ENTITY_PROFILE_LABEL = "End Entity Profile";
+    public static final String ATTRIBUTE_EJBCA_RESTAPI_URL_LABEL = "EJBCA REST API base URL";
 
 
     @Autowired
@@ -117,6 +119,34 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setRequired(true);
         attribute.setReadOnly(false);
         attribute.setVisible(true);
+        attribute.setValue(List.of().toArray());
+
+        Set<AttributeCallbackMapping> mappings = new HashSet<>();
+        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE, "selectedEjbcaInstance", AttributeValueTarget.BODY));
+
+        AttributeCallback attributeCallback = new AttributeCallback();
+        attributeCallback.setCallbackContext("/v1/discoveryProvider/listEndEntityProfiles");
+        attributeCallback.setCallbackMethod("POST");
+        attributeCallback.setMappings(mappings);
+
+        attribute.setAttributeCallback(attributeCallback);
+
+        return attribute;
+    }
+
+    private AttributeDefinition ejbcaRestApiUrl() {
+        AttributeDefinition attribute = new AttributeDefinition();
+        attribute.setUuid("c5b974dd-e00a-44b6-b9bc-0946e79730a2");
+        attribute.setName(ATTRIBUTE_EJBCA_RESTAPI_URL);
+        attribute.setLabel(ATTRIBUTE_EJBCA_RESTAPI_URL_LABEL);
+        attribute.setDescription("Base URL of the EJBCA REST API to be used");
+        attribute.setType(BaseAttributeDefinitionTypes.STRING);
+        attribute.setRequired(true);
+        attribute.setReadOnly(false);
+        attribute.setVisible(true);
+
+        // TODO
+
         attribute.setValue(List.of().toArray());
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();

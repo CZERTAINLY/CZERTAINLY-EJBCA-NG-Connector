@@ -21,15 +21,11 @@ import com.czertainly.ca.connector.ejbca.ws.EjbcaWSService;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import com.czertainly.core.util.KeyStoreUtils;
 import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,8 +34,6 @@ import reactor.netty.http.client.HttpClient;
 
 import javax.net.ssl.*;
 import javax.xml.ws.BindingProvider;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
@@ -54,12 +48,13 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
     private static final Logger logger = LoggerFactory.getLogger(AuthorityInstanceServiceImpl.class);
 
     private static final Map<Long, EjbcaWS> connectionsCache = new ConcurrentHashMap<>();
+    private static final Map<Long, WebClient> connectionsRestApiCache = new ConcurrentHashMap<>();
 
     @Value("${ejbca.timeout.connect:500}")
     private int connectionTimeout;
 
     @Value("${ejbca.timeout.request:1500}")
-    private int requsetTimeout;
+    private int requestTimeout;
 
     @Autowired
     private AuthorityInstanceRepository authorityInstanceRepository;
@@ -188,14 +183,6 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
     }
 
     @Override
-    public EjbcaWS getConnectionName(String name) throws NotFoundException {
-        AuthorityInstance instance = authorityInstanceRepository
-                .findByName(name)
-                .orElseThrow(() -> new NotFoundException(AuthorityInstance.class, name));
-        return getConnection(instance);
-    }
-
-    @Override
     public synchronized EjbcaWS getConnection(AuthorityInstance instance) {
         EjbcaWS port = connectionsCache.get(instance.getId());
         if (port != null) {
@@ -274,18 +261,25 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
         return getRestApiConnection(instance);
     }
 
-    private WebClient getRestApiConnection(AuthorityInstance instance) {
-//        List<AttributeDefinition> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData());
-//
-//        WebClient webClient = WebClient.builder().build();
-//        SslContext sslContext = EjbcaRestApiClient.createSslContext(attributes);
-//
-//        HttpClient httpClient = HttpClient.create().secure(t -> t.sslContext(sslContext));
-//        webClient.mutate().clientConnector(new ReactorClientHttpConnector(httpClient)).build();
-//
-//        ClientHttpConnector httpConnector = HttpClient.create().secure(t -> t.sslContext(sslContext));
-//        return WebClient.builder().clientConnector(httpClient).build();
+    @Override
+    public synchronized WebClient getRestApiConnection(AuthorityInstance instance) {
+        WebClient webClient = connectionsRestApiCache.get(instance.getId());
+        if (webClient != null) {
+            return webClient;
+        }
 
+        webClient = createRestApiConnection(instance);
+
+        try {
+            connectionsRestApiCache.put(instance.getId(), webClient);
+        } catch (Exception e) {
+            logger.error("Fail to cache REST API connection to CA {} due to error {}", instance.getId(), e.getMessage(), e);
+        }
+
+        return webClient;
+    }
+
+    private WebClient createRestApiConnection(AuthorityInstance instance) {
         List<AttributeDefinition> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData());
 
         SslContext sslContext = EjbcaRestApiClient.createSslContext(attributes);

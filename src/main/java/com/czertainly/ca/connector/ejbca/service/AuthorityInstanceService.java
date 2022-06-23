@@ -19,9 +19,10 @@ public interface AuthorityInstanceService {
     void removeAuthorityInstance(String uuid) throws NotFoundException;
 
     EjbcaWS getConnection(String uuid) throws NotFoundException;
-    EjbcaWS getConnectionName(String name) throws NotFoundException;
 
     EjbcaWS getConnection(AuthorityInstance instance);
 
     WebClient getRestApiConnection(String uuid) throws NotFoundException;
+
+    WebClient getRestApiConnection(AuthorityInstance instance);
 }

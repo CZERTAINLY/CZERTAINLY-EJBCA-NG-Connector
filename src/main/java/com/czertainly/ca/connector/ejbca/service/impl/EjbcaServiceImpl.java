@@ -9,6 +9,7 @@ import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.ca.connector.ejbca.api.CertificateControllerImpl;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.request.Pagination;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificateSortRestRequest;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificatesRestRequestV2;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.response.SearchCertificatesRestResponseV2;
 import com.czertainly.ca.connector.ejbca.rest.EjbcaRestApiClient;
@@ -176,6 +177,8 @@ public class EjbcaServiceImpl implements EjbcaService {
        Pagination pagination = new Pagination();
        pagination.setPageSize(100);
        pagination.setCurrentPage(1);
+
+       SearchCertificateSortRestRequest sort = new SearchCertificateSortRestRequest();
 
        SearchCertificatesRestRequestV2 request = new SearchCertificatesRestRequestV2();
        request.setPagination(pagination);
