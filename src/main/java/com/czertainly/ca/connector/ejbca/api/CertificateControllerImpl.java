@@ -110,7 +110,7 @@ public class CertificateControllerImpl implements CertificateController {
 
     @Override
     public List<AttributeDefinition> listRevokeCertificateAttributes(String uuid) {
-        return null;
+        return List.of();
     }
 
     @Override
