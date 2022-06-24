@@ -226,13 +226,14 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
             }
 
             TrustManager[] tm = null;
-            String trustStoreData = AttributeDefinitionUtils.getAttributeContent("trustStore", attributes, FileAttributeContent.class).getValue();
-            if (trustStoreData != null && !trustStoreData.isEmpty()) {
+            FileAttributeContent trustStoreDataContent = AttributeDefinitionUtils.getAttributeContent("trustStore", attributes, FileAttributeContent.class);
+            if (trustStoreDataContent != null && !trustStoreDataContent.getValue().isEmpty()) {
+                String trustStoreData = trustStoreDataContent.getValue();
                 TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()); //"SunX509"
 
                 String trustStoreType = (String) AttributeDefinitionUtils.getAttributeContent("trustStoreType", attributes, BaseAttributeContent.class).getValue();
                 String trustStorePassword = (String) AttributeDefinitionUtils.getAttributeContent("trustStorePassword", attributes, BaseAttributeContent.class).getValue();
-                byte[] trustStoreBytes = Base64.getDecoder().decode(keyStoreData);
+                byte[] trustStoreBytes = Base64.getDecoder().decode(trustStoreData);
 
                 tmf.init(KeyStoreUtils.bytes2KeyStore(trustStoreBytes, trustStorePassword, trustStoreType));
                 tm = tmf.getTrustManagers();
