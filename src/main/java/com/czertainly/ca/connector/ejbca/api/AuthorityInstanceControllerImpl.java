@@ -112,7 +112,7 @@ public class AuthorityInstanceControllerImpl implements AuthorityInstanceControl
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
         mappings.add(new AttributeCallbackMapping("authorityId", AttributeValueTarget.PATH_VARIABLE, uuid));
-        mappings.add(new AttributeCallbackMapping(endEntityProfile.getName(), "endEntityProfileId", AttributeValueTarget.PATH_VARIABLE));
+        mappings.add(new AttributeCallbackMapping(endEntityProfile.getName(), "endEntityProfileId.id", AttributeValueTarget.PATH_VARIABLE));
 
         AttributeDefinition certificateProfile = new AttributeDefinition();
         certificateProfile.setUuid("eb57a756-5a11-4d31-866b-e3f066f7a2b9");

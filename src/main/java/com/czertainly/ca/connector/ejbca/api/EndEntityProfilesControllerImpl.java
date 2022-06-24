@@ -20,7 +20,6 @@ public class EndEntityProfilesControllerImpl {
     @Autowired
     private EndEntityProfileEjbcaService endEntityProfileEjbcaService;
 
-
     @RequestMapping(method = RequestMethod.GET, produces = {"application/json"})
     public List<JsonAttributeContent> listEntityProfiles(@PathVariable String uuid) throws NotFoundException {
         List<JsonAttributeContent> listJsonContent = new ArrayList<>();
