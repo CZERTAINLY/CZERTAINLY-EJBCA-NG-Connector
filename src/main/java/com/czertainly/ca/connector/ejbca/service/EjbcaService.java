@@ -2,8 +2,7 @@ package com.czertainly.ca.connector.ejbca.service;
 
 import com.czertainly.api.exception.AlreadyExistException;
 import com.czertainly.api.exception.NotFoundException;
-import com.czertainly.api.model.common.RequestAttributeDto;
-import com.czertainly.api.model.connector.v2.CertRevocationDto;
+import com.czertainly.api.model.common.attribute.RequestAttributeDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.ca.connector.ejbca.ws.*;
 import org.springframework.security.access.AccessDeniedException;

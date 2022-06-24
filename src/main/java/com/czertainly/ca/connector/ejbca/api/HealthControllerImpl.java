@@ -10,6 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class HealthControllerImpl implements HealthController {
 
     @Autowired
+    public void setHealthCheckService(HealthCheckService healthCheckService) {
+        this.healthCheckService = healthCheckService;
+    }
+
     HealthCheckService healthCheckService;
 
     @Override

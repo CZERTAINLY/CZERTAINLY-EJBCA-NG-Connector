@@ -18,6 +18,10 @@ public class HealthCheckServiceImpl implements HealthCheckService {
     private static final Logger logger = LoggerFactory.getLogger(HealthCheckServiceImpl.class);
 
     @Autowired
+    public void setAuthorityInstanceService(AuthorityInstanceService authorityInstanceService) {
+        this.authorityInstanceService = authorityInstanceService;
+    }
+
     private AuthorityInstanceService authorityInstanceService;
 
     @Override

@@ -1,7 +1,7 @@
 package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.interfaces.connector.AttributesController;
-import com.czertainly.api.model.common.*;
+import com.czertainly.api.model.common.attribute.*;
 import com.czertainly.ca.connector.ejbca.service.AttributeService;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.slf4j.Logger;
@@ -29,10 +29,12 @@ public class AttributeServiceImpl implements AttributeService {
         url.setName("url");
         url.setLabel("EJBCA WS URL");
         url.setDescription("URL of EJBCA web services");
-        url.setType(BaseAttributeDefinitionTypes.STRING);
+        url.setType(AttributeType.STRING);
         url.setRequired(true);
         url.setReadOnly(false);
         url.setVisible(true);
+        url.setList(false);
+        url.setMultiSelect(false);
         attrs.add(url);
         
         AttributeDefinition credential = new AttributeDefinition();
@@ -40,10 +42,12 @@ public class AttributeServiceImpl implements AttributeService {
         credential.setName("credential");
         credential.setLabel("Credential");
         credential.setDescription("SoftKeyStore Credential representing EJBCA administrator for the communication");
-        credential.setType(BaseAttributeDefinitionTypes.CREDENTIAL);
+        credential.setType(AttributeType.CREDENTIAL);
         credential.setRequired(true);
         credential.setReadOnly(false);
         credential.setVisible(true);
+        credential.setList(true);
+        url.setMultiSelect(false);
         
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
         mappings.add(new AttributeCallbackMapping(

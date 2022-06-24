@@ -21,6 +21,10 @@ import java.util.stream.Collectors;
 public class EndEntityProfileEjbcaServiceImpl implements EndEntityProfileEjbcaService {
 
     @Autowired
+    public void setAuthorityInstanceService(AuthorityInstanceService authorityInstanceService) {
+        this.authorityInstanceService = authorityInstanceService;
+    }
+
     private AuthorityInstanceService authorityInstanceService;
 
     @Override

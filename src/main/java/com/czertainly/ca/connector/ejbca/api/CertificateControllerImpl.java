@@ -1,9 +1,9 @@
 package com.czertainly.ca.connector.ejbca.api;
 
 import com.czertainly.api.interfaces.connector.v2.CertificateController;
-import com.czertainly.api.model.common.AttributeDefinition;
-import com.czertainly.api.model.common.BaseAttributeDefinitionTypes;
-import com.czertainly.api.model.common.RequestAttributeDto;
+import com.czertainly.api.model.common.attribute.AttributeDefinition;
+import com.czertainly.api.model.common.attribute.AttributeType;
+import com.czertainly.api.model.common.attribute.RequestAttributeDto;
 import com.czertainly.api.model.connector.v2.CertRevocationDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.api.model.connector.v2.CertificateRenewRequestDto;
@@ -31,10 +31,14 @@ public class CertificateControllerImpl implements CertificateController {
     public static final String ATTRIBUTE_EXTENSION_LABEL = "Extension Data";
 
     @Autowired
+    public void setCertificateEjbcaService(CertificateEjbcaService certificateEjbcaService) {
+        this.certificateEjbcaService = certificateEjbcaService;
+    }
+
     private CertificateEjbcaService certificateEjbcaService;
 
     @Override
-    public List<AttributeDefinition> listIssueCertificateAttributes(String uuid) throws NotFoundException {
+    public List<AttributeDefinition> listIssueCertificateAttributes(String uuid) {
         List<AttributeDefinition> attrs = new ArrayList<>();
 
         AttributeDefinition email = new AttributeDefinition();
@@ -42,10 +46,12 @@ public class CertificateControllerImpl implements CertificateController {
         email.setName(ATTRIBUTE_EMAIL);
         email.setLabel(ATTRIBUTE_EMAIL_LABEL);
         email.setDescription("End Entity email address");
-        email.setType(BaseAttributeDefinitionTypes.STRING);
+        email.setType(AttributeType.STRING);
         email.setRequired(false);
         email.setReadOnly(false);
         email.setVisible(true);
+        email.setList(false);
+        email.setMultiSelect(false);
         attrs.add(email);
 
         AttributeDefinition san = new AttributeDefinition();
@@ -53,10 +59,12 @@ public class CertificateControllerImpl implements CertificateController {
         san.setName(ATTRIBUTE_SAN);
         san.setLabel(ATTRIBUTE_SAN_LABEL);
         san.setDescription("Comma separated Subject Alternative Names");
-        san.setType(BaseAttributeDefinitionTypes.STRING);
+        san.setType(AttributeType.STRING);
         san.setRequired(false);
         san.setReadOnly(false);
         san.setVisible(true);
+        san.setList(false);
+        san.setMultiSelect(false);
         attrs.add(san);
 
         AttributeDefinition extension = new AttributeDefinition();
@@ -64,24 +72,26 @@ public class CertificateControllerImpl implements CertificateController {
         extension.setName(ATTRIBUTE_EXTENSION);
         extension.setLabel(ATTRIBUTE_EXTENSION_LABEL);
         extension.setDescription("Comma separated Extension Data");
-        extension.setType(BaseAttributeDefinitionTypes.STRING);
+        extension.setType(AttributeType.STRING);
         extension.setRequired(false);
         extension.setReadOnly(false);
         extension.setVisible(true);
+        extension.setList(false);
+        extension.setMultiSelect(false);
         attrs.add(extension);
 
         return attrs;
     }
 
     @Override
-    public void validateIssueCertificateAttributes(String uuid, List<RequestAttributeDto> attributes) throws NotFoundException, ValidationException {
+    public void validateIssueCertificateAttributes(String uuid, List<RequestAttributeDto> attributes) throws ValidationException {
         AttributeDefinitionUtils.validateAttributes(
                 listIssueCertificateAttributes(uuid),
                 attributes);
     }
 
     @Override
-    public CertificateDataResponseDto issueCertificate(String uuid, CertificateSignRequestDto request) throws NotFoundException {
+    public CertificateDataResponseDto issueCertificate(String uuid, CertificateSignRequestDto request) {
         try {
             return certificateEjbcaService.issueCertificate(uuid, request);
         } catch (Exception e) {
@@ -90,7 +100,7 @@ public class CertificateControllerImpl implements CertificateController {
     }
 
     @Override
-    public CertificateDataResponseDto renewCertificate(String uuid, CertificateRenewRequestDto request) throws NotFoundException {
+    public CertificateDataResponseDto renewCertificate(String uuid, CertificateRenewRequestDto request) {
         try {
             return certificateEjbcaService.renewCertificate(uuid, request);
         } catch (Exception e) {
@@ -99,12 +109,12 @@ public class CertificateControllerImpl implements CertificateController {
     }
 
     @Override
-    public List<AttributeDefinition> listRevokeCertificateAttributes(String uuid) throws NotFoundException {
-        return null;
+    public List<AttributeDefinition> listRevokeCertificateAttributes(String uuid) {
+        return List.of();
     }
 
     @Override
-    public void validateRevokeCertificateAttributes(String uuid, List<RequestAttributeDto> attributes) throws NotFoundException, ValidationException {
+    public void validateRevokeCertificateAttributes(String uuid, List<RequestAttributeDto> attributes) throws ValidationException {
         AttributeDefinitionUtils.validateAttributes(
                 listRevokeCertificateAttributes(uuid),
                 attributes);
