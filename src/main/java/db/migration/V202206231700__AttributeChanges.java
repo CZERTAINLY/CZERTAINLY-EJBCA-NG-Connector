@@ -1,6 +1,6 @@
 package db.migration;
 
-import com.czertainly.ca.connector.ejbca.util.DatabaseMigration;
+import com.czertainly.ca.connector.ejbca.enums.JavaMigrationChecksums;
 import com.czertainly.core.util.AttributeMigrationUtils;
 import org.flywaydb.core.api.migration.BaseJavaMigration;
 import org.flywaydb.core.api.migration.Context;
@@ -24,7 +24,7 @@ public class V202206231700__AttributeChanges extends BaseJavaMigration {
 
     @Override
     public Integer getChecksum() {
-        return DatabaseMigration.JavaMigrationChecksums.V202206231700__AttributeChanges.getChecksum();
+        return JavaMigrationChecksums.V202206231700__AttributeChanges.getChecksum();
     }
 
     public void migrate(Context context) throws Exception {
