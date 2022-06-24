@@ -189,12 +189,12 @@ public class EndEntityEjbcaServiceImpl implements EndEntityEjbcaService {
         NameAndIdDto ca = LocalAttributeUtil.getNameAndIdData(ATTRIBUTE_CERTIFICATION_AUTHORITY, raProfileAttrs);
         user.setCaName(ca.getName());
 
-        Boolean sendNotifications = (Boolean) AttributeDefinitionUtils.getAttributeContent(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs, BaseAttributeContent.class).getValue();
+        Boolean sendNotifications = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs, BaseAttributeContent.class);
         if (sendNotifications != null) {
             user.setSendNotification(sendNotifications);
         }
 
-        Boolean keyRecoverable = (Boolean) AttributeDefinitionUtils.getAttributeContent(ATTRIBUTE_KEY_RECOVERABLE, raProfileAttrs, BaseAttributeContent.class).getValue();
+        Boolean keyRecoverable = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEY_RECOVERABLE, raProfileAttrs, BaseAttributeContent.class);
         if (keyRecoverable != null) {
             user.setKeyRecoverable(keyRecoverable);
         }

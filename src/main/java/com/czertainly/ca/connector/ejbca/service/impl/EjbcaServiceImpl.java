@@ -168,17 +168,17 @@ public class EjbcaServiceImpl implements EjbcaService {
     private void prepareEndEntity(UserDataVOWS user, List<RequestAttributeDto> raProfileAttrs, List<RequestAttributeDto> issueAttrs) {
         setUserProfiles(user, raProfileAttrs);
 
-        String email = (String) AttributeDefinitionUtils.getAttributeContent(CertificateControllerImpl.ATTRIBUTE_EMAIL, issueAttrs, BaseAttributeContent.class).getValue();
+        String email = AttributeDefinitionUtils.getAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EMAIL, issueAttrs, BaseAttributeContent.class);
         if (StringUtils.isNotBlank(email)) {
             user.setEmail(email);
         }
 
-        String san = (String) AttributeDefinitionUtils.getAttributeContent(CertificateControllerImpl.ATTRIBUTE_SAN, issueAttrs, BaseAttributeContent.class).getValue();
+        String san = AttributeDefinitionUtils.getAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_SAN, issueAttrs, BaseAttributeContent.class);
         if (StringUtils.isNotBlank(san)) {
             user.setSubjectAltName(san);
         }
 
-        String extension = (String) AttributeDefinitionUtils.getAttributeContent(CertificateControllerImpl.ATTRIBUTE_EXTENSION, issueAttrs, BaseAttributeContent.class).getValue();
+        String extension = AttributeDefinitionUtils.getAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EXTENSION, issueAttrs, BaseAttributeContent.class);
         setUserExtensions(user, extension);
     }
 
@@ -214,14 +214,14 @@ public class EjbcaServiceImpl implements EjbcaService {
         user.setCaName(ca.getName());
 
         boolean sendNotifications = false;
-        Boolean value = (Boolean) AttributeDefinitionUtils.getAttributeContent(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs, BaseAttributeContent.class).getValue();
+        Boolean value = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs, BaseAttributeContent.class);
         if (value != null) {
             sendNotifications = value;
         }
         user.setSendNotification(sendNotifications);
 
         boolean keyRecoverable = false;
-        value = (Boolean) AttributeDefinitionUtils.getAttributeContent(ATTRIBUTE_KEY_RECOVERABLE, raProfileAttrs, BaseAttributeContent.class).getValue();
+        value = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEY_RECOVERABLE, raProfileAttrs, BaseAttributeContent.class);
         if (value != null) {
             keyRecoverable = value;
         }

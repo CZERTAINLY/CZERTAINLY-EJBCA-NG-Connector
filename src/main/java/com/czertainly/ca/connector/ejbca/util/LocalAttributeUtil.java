@@ -1,7 +1,6 @@
 package com.czertainly.ca.connector.ejbca.util;
 
 import com.czertainly.api.model.common.NameAndIdDto;
-import com.czertainly.api.model.common.attribute.RequestAttributeDto;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
