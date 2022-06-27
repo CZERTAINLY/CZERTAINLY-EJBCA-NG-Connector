@@ -21,6 +21,7 @@ public class V202206231700__AttributeChanges extends BaseJavaMigration {
     private static final String AUTHORITY_INSTANCE_TABLE_NAME = "authority_instance";
 
     private static final String ATTRIBUTE_COLUMN_NAME = "attributes";
+    private static final String CREDENTIAL_COLUMN_NAME = "credential_data";
 
     @Override
     public Integer getChecksum() {
@@ -37,10 +38,14 @@ public class V202206231700__AttributeChanges extends BaseJavaMigration {
         try (Statement select = context.getConnection().createStatement()) {
             try (ResultSet rows = select.executeQuery("SELECT id, attributes FROM authority_instance ORDER BY id")) {
                 List<String> migrationCommands = AttributeMigrationUtils.getMigrationCommands(rows, AUTHORITY_INSTANCE_TABLE_NAME, ATTRIBUTE_COLUMN_NAME);
+                ResultSet credentialRows = select.executeQuery("SELECT id, credential_data FROM authority_instance ORDER BY id");
+                List<String> credentialMigrationCommands = AttributeMigrationUtils.getMigrationCommands(credentialRows, AUTHORITY_INSTANCE_TABLE_NAME, CREDENTIAL_COLUMN_NAME);
                 executeCommands(select, migrationCommands);
+                executeCommands(select, credentialMigrationCommands);
             }
         }
     }
+
 
     private void executeCommands(Statement select, List<String> commands) throws SQLException {
         for(String command: commands) {
