@@ -179,13 +179,13 @@ public class EndEntityEjbcaServiceImpl implements EndEntityEjbcaService {
         //String tokenType = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_TOKEN_TYPE, raProfileAttrs);
         //user.setTokenType(tokenType);
 
-        NameAndIdDto endEntityProfile = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_END_ENTITY_PROFILE, raProfileAttrs, NameAndIdDto.class);
+        NameAndIdDto endEntityProfile = AttributeDefinitionUtils.getJsonAttributeContentData(ATTRIBUTE_END_ENTITY_PROFILE, raProfileAttrs, NameAndIdDto.class);
         user.setEndEntityProfileName(endEntityProfile.getName());
 
-        NameAndIdDto certificateProfile = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_CERTIFICATE_PROFILE, raProfileAttrs, NameAndIdDto.class);
+        NameAndIdDto certificateProfile = AttributeDefinitionUtils.getJsonAttributeContentData(ATTRIBUTE_CERTIFICATE_PROFILE, raProfileAttrs, NameAndIdDto.class);
         user.setCertificateProfileName(certificateProfile.getName());
 
-        NameAndIdDto ca = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_CERTIFICATION_AUTHORITY, raProfileAttrs, NameAndIdDto.class);
+        NameAndIdDto ca = AttributeDefinitionUtils.getJsonAttributeContentData(ATTRIBUTE_CERTIFICATION_AUTHORITY, raProfileAttrs, NameAndIdDto.class);
         user.setCaName(ca.getName());
 
         Boolean sendNotifications = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs, BaseAttributeContent.class);
