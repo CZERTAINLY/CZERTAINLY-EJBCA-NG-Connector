@@ -2,15 +2,14 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.exception.ValidationError;
 import com.czertainly.api.exception.ValidationException;
-import com.czertainly.api.model.common.*;
+import com.czertainly.api.model.common.attribute.*;
+import com.czertainly.api.model.common.attribute.content.JsonAttributeContent;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.dto.AuthorityInstanceNameAndUuidDto;
 import com.czertainly.ca.connector.ejbca.service.DiscoveryAttributeService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
-import com.czertainly.ca.connector.ejbca.util.EjbcaVersion;
 import com.czertainly.core.util.AttributeDefinitionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,17 +93,24 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
 
     private AttributeDefinition prepareEjbcaInstanceAttribute() {
         List<AuthorityInstanceNameAndUuidDto> instanceNames = authorityInstanceRepository.findAll().stream().map(AuthorityInstance::mapToNameAndUuidDto).collect(Collectors.toList());
+        List<JsonAttributeContent> contentList = new ArrayList<>();
+        for (AuthorityInstanceNameAndUuidDto instance : instanceNames) {
+            JsonAttributeContent content = new JsonAttributeContent(instance.getName(), instance);
+            contentList.add(content);
+        }
 
         AttributeDefinition attribute = new AttributeDefinition();
         attribute.setUuid("dce22e96-3335-4181-b90c-c7f887d8d109");
         attribute.setName(ATTRIBUTE_EJBCA_INSTANCE);
         attribute.setLabel(ATTRIBUTE_EJBCA_INSTANCE_LABEL);
         attribute.setDescription("The EJBCA instance where Discovery process should search for Certificates");
-        attribute.setType(BaseAttributeDefinitionTypes.LIST);
+        attribute.setType(AttributeType.JSON);
         attribute.setRequired(true);
         attribute.setReadOnly(false);
         attribute.setVisible(true);
-        attribute.setValue(instanceNames.toArray());
+        attribute.setList(true);
+        attribute.setMultiSelect(false);
+        attribute.setContent(contentList);
 
         return attribute;
     }
@@ -115,11 +121,13 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setName(ATTRIBUTE_END_ENTITY_PROFILE);
         attribute.setLabel(ATTRIBUTE_END_ENTITY_PROFILE_LABEL);
         attribute.setDescription("The End Entity Profile where Discovery process should search for Certificates");
-        attribute.setType(BaseAttributeDefinitionTypes.LIST);
+        attribute.setType(AttributeType.JSON);
         attribute.setRequired(true);
         attribute.setReadOnly(false);
         attribute.setVisible(true);
-        attribute.setValue(List.of().toArray());
+        attribute.setList(true);
+        attribute.setMultiSelect(false);
+        attribute.setContent(List.of());
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
         mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE, "selectedEjbcaInstance", AttributeValueTarget.BODY));
@@ -140,14 +148,13 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setName(ATTRIBUTE_EJBCA_RESTAPI_URL);
         attribute.setLabel(ATTRIBUTE_EJBCA_RESTAPI_URL_LABEL);
         attribute.setDescription("Base URL of the EJBCA REST API to be used");
-        attribute.setType(BaseAttributeDefinitionTypes.STRING);
+        attribute.setType(AttributeType.STRING);
         attribute.setRequired(true);
         attribute.setReadOnly(false);
         attribute.setVisible(true);
-
-        // TODO
-
-        attribute.setValue(List.of().toArray());
+        attribute.setList(false);
+        attribute.setMultiSelect(false);
+        //attribute.setContent(List.of().toArray());
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
         mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE, "selectedEjbcaInstance", AttributeValueTarget.BODY));
@@ -168,14 +175,16 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setName(ATTRIBUTE_EJBCA_VERSION);
         attribute.setLabel(ATTRIBUTE_EJBCA_VERSION_LABEL);
         attribute.setDescription("The version of EJBCA that is running on the instance");
-        attribute.setType(BaseAttributeDefinitionTypes.STRING);
+        attribute.setType(AttributeType.STRING);
         attribute.setRequired(false);
         attribute.setReadOnly(true);
         attribute.setVisible(true);
-        attribute.setValue(""); // empty string  and the value will be based on the callback
+        attribute.setList(false);
+        attribute.setMultiSelect(false);
+        // attribute.setValue(""); // empty string  and the value will be based on the callback
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
-        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE, "ejbcaInstanceName", AttributeValueTarget.PATH_VARIABLE));
+        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE + ".name", "ejbcaInstanceName", AttributeValueTarget.PATH_VARIABLE));
 
         AttributeCallback attributeCallback = new AttributeCallback();
         attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceName}/ejbcaVersion");

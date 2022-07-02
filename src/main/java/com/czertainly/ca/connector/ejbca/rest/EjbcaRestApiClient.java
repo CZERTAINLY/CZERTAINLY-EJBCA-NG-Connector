@@ -2,19 +2,18 @@ package com.czertainly.ca.connector.ejbca.rest;
 
 import com.czertainly.api.clients.BaseApiClient;
 import com.czertainly.api.exception.*;
-import com.czertainly.api.model.common.AttributeDefinition;
+import com.czertainly.api.model.common.attribute.AttributeDefinition;
+import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.response.ExceptionErrorRestResponse;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import com.czertainly.core.util.KeyStoreUtils;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
@@ -26,11 +25,9 @@ import reactor.netty.http.client.HttpClient;
 import javax.net.ssl.*;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public abstract class EjbcaRestApiClient {
     private static final Logger logger = LoggerFactory.getLogger(BaseApiClient.class);
@@ -61,12 +58,12 @@ public abstract class EjbcaRestApiClient {
     public static SslContext createSslContext(List<AttributeDefinition> attributes) {
         try {
             KeyManager km = null;
-            String keyStoreData = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_KEYSTORE, attributes);
+            String keyStoreData = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEYSTORE, attributes, BaseAttributeContent.class);
             if (keyStoreData != null && !keyStoreData.isEmpty()) {
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()); //"SunX509"
 
-                String keyStoreType = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_KEYSTORE_TYPE, attributes);
-                String keyStorePassword = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_KEYSTORE_PASSWORD, attributes);
+                String keyStoreType = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEYSTORE_TYPE, attributes, BaseAttributeContent.class);
+                String keyStorePassword = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEYSTORE_PASSWORD, attributes, BaseAttributeContent.class);
                 byte[] keyStoreBytes = Base64.getDecoder().decode(keyStoreData);
 
                 kmf.init(KeyStoreUtils.bytes2KeyStore(keyStoreBytes, keyStorePassword, keyStoreType), keyStorePassword.toCharArray());
@@ -74,12 +71,12 @@ public abstract class EjbcaRestApiClient {
             }
 
             TrustManager tm = null;
-            String trustStoreData = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_TRUSTSTORE, attributes);
+            String trustStoreData = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_TRUSTSTORE, attributes, BaseAttributeContent.class);
             if (trustStoreData != null && !trustStoreData.isEmpty()) {
                 TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()); //"SunX509"
 
-                String trustStoreType = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_TRUSTSTORE_TYPE, attributes);
-                String trustStorePassword = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_TRUSTSTORE_PASSWORD, attributes);
+                String trustStoreType = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_TRUSTSTORE_TYPE, attributes, BaseAttributeContent.class);
+                String trustStorePassword = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_TRUSTSTORE_PASSWORD, attributes, BaseAttributeContent.class);
                 byte[] trustStoreBytes = Base64.getDecoder().decode(trustStoreData);
 
                 tmf.init(KeyStoreUtils.bytes2KeyStore(trustStoreBytes, trustStorePassword, trustStoreType));

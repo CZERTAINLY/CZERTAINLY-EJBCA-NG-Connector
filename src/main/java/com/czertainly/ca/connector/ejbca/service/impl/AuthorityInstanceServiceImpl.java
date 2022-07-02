@@ -286,10 +286,8 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
 
         HttpClient httpClient = HttpClient.create().secure(t -> t.sslContext(sslContext));
 
-        WebClient webClient = WebClient
+        return WebClient
                 .builder()
                 .clientConnector(new ReactorClientHttpConnector(httpClient)).build();
-
-        return webClient;
     }
 }

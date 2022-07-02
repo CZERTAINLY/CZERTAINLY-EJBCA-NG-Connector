@@ -1,7 +1,7 @@
 package com.czertainly.ca.connector.ejbca.service;
 
-import com.czertainly.api.model.common.AttributeDefinition;
-import com.czertainly.api.model.common.RequestAttributeDto;
+import com.czertainly.api.model.common.attribute.AttributeDefinition;
+import com.czertainly.api.model.common.attribute.RequestAttributeDto;
 
 import java.util.List;
 
