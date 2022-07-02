@@ -43,10 +43,7 @@ public class DiscoveryServiceImpl implements DiscoveryService {
     }
 
     private void discoverCertificatesInternal(DiscoveryRequestDto request, DiscoveryHistory history) throws NotFoundException {
-
-        final ObjectMapper mapper = new ObjectMapper(); // jackson's objectmapper
-        final AuthorityInstanceNameAndUuidDto instance = mapper.convertValue(AttributeDefinitionUtils.getAttributeValue(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_INSTANCE, request.getAttributes()), AuthorityInstanceNameAndUuidDto.class);
-
+        final AuthorityInstanceNameAndUuidDto instance = AttributeDefinitionUtils.getJsonAttributeContentData(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_INSTANCE, request.getAttributes(), AuthorityInstanceNameAndUuidDto.class);
         ejbcaService.searchCertificates(instance.getUuid(), "https://lab01.3key.company:8453/ejbca/ejbca-rest-api/v2/certificate/search");
     }
 }
