@@ -173,29 +173,16 @@ public class EjbcaServiceImpl implements EjbcaService {
     }
 
     @Override
-    public void searchCertificates(String authorityInstanceUuid, String restUrl) throws NotFoundException {
+    public SearchCertificatesRestResponseV2 searchCertificates(String authorityInstanceUuid, String restUrl, SearchCertificatesRestRequestV2 request) throws NotFoundException {
        WebClient ejbcaWC = authorityInstanceService.getRestApiConnection(authorityInstanceUuid);
 
-       Pagination pagination = new Pagination();
-       pagination.setPageSize(100);
-       pagination.setCurrentPage(1);
-
-       SearchCertificateSortRestRequest sort = new SearchCertificateSortRestRequest();
-
-       SearchCertificatesRestRequestV2 request = new SearchCertificatesRestRequestV2();
-       request.setPagination(pagination);
-
-       SearchCertificatesRestResponseV2 response = ejbcaWC.post()
-               .uri(restUrl + "/v2/certificate")
-               .contentType(MediaType.APPLICATION_JSON)
-               .bodyValue(request)
-               .retrieve()
-               .bodyToMono(SearchCertificatesRestResponseV2.class)
-               .block();
-
-       if (response.getPaginationSummary().getCurrentPage() < response.getPaginationSummary().getPageSize()) {
-           throw new NotFoundException("Certificates");
-       }
+        return ejbcaWC.post()
+                .uri(restUrl + "/v2/certificate/search")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(SearchCertificatesRestResponseV2.class)
+                .block();
     }
 
     @Override

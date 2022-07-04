@@ -40,6 +40,9 @@ public class DiscoveryControllerImpl implements DiscoveryController {
         discoveryService.discoverCertificate(request, history);
         DiscoveryDataRequestDto dto = new DiscoveryDataRequestDto();
         dto.setName(request.getName());
+        // initial values when discovery is finished before the Async method discoverCertificate
+        dto.setStartIndex(0);
+        dto.setEndIndex(1000);
         return discoveryService.getProviderDtoData(dto, history);
     }
 

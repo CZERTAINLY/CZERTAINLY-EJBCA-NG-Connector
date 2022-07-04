@@ -6,6 +6,8 @@ import com.czertainly.api.model.common.NameAndIdDto;
 import com.czertainly.api.model.common.attribute.RequestAttributeDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificatesRestRequestV2;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.response.SearchCertificatesRestResponseV2;
 import com.czertainly.ca.connector.ejbca.util.EjbcaVersion;
 import com.czertainly.ca.connector.ejbca.ws.*;
 import org.springframework.security.access.AccessDeniedException;
@@ -23,7 +25,7 @@ public interface EjbcaService {
 
     EjbcaVersion getEjbcaVersion(String authorityInstanceUuid) throws NotFoundException;
 
-    void searchCertificates(String authorityInstanceUuid, String restUrl) throws NotFoundException;
+    SearchCertificatesRestResponseV2 searchCertificates(String authorityInstanceUuid, String restUrl, SearchCertificatesRestRequestV2 request) throws NotFoundException;
 
     List<NameAndIdDto> getAvailableCas(String authorityInstanceUuid) throws NotFoundException;
 }

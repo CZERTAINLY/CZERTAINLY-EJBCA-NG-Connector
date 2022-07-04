@@ -122,6 +122,8 @@ public class CertificateRestResponseV2 {
         this.crlPartitionIndex = builder.crlPartitionIndex;
     }
 
+    public CertificateRestResponseV2() {}
+
     /**
      * Return a builder instance for this class.
      *

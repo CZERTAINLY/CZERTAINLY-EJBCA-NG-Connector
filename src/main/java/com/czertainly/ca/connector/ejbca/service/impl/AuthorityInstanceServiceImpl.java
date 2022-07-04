@@ -30,6 +30,7 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
@@ -301,6 +302,14 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
     private WebClient createRestApiConnection(AuthorityInstance instance) {
         List<AttributeDefinition> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData());
 
+        /**
+         * 1 certificate in response ~ 2000 bytes * 1000 = 2000000
+         */
+        final int size = 2000 * 1000;
+        final ExchangeStrategies strategies = ExchangeStrategies.builder()
+                .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(size))
+                .build();
+
         SslContext sslContext = EjbcaRestApiClient.createSslContext(attributes);
 
         HttpClient httpClient = HttpClient.create().secure(t -> t.sslContext(sslContext));
@@ -308,6 +317,7 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
         return WebClient
                 .builder()
                 .filter(ExchangeFilterFunction.ofResponseProcessor(EjbcaRestApiClient::handleHttpExceptions))
+                .exchangeStrategies(strategies)
                 .clientConnector(new ReactorClientHttpConnector(httpClient)).build();
     }
 }

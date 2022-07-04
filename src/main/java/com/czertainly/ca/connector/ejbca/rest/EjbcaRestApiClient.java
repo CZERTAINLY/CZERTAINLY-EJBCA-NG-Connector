@@ -124,8 +124,12 @@ public abstract class EjbcaRestApiClient {
     }
 
     public static Mono<ClientResponse> handleHttpExceptions(ClientResponse clientResponse) {
-        return clientResponse.bodyToMono(ExceptionErrorRestResponse.class).flatMap(body ->
-                Mono.error(new EjbcaRestApiException(body.getErrorMessage(), clientResponse.statusCode(), body)));
+        if (clientResponse.statusCode().is4xxClientError() || clientResponse.statusCode().is5xxServerError()) {
+            return clientResponse.bodyToMono(ExceptionErrorRestResponse.class).flatMap(body ->
+                    Mono.error(new EjbcaRestApiException(body.getErrorMessage(), clientResponse.statusCode(), body)));
+        }
+
+        return Mono.just(clientResponse);
     }
 
     public static <T, R> R processRequest(Function<T, R> func, T request) {

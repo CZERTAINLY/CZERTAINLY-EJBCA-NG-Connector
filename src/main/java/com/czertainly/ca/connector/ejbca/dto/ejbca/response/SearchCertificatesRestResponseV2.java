@@ -9,13 +9,16 @@
  *************************************************************************/
 package com.czertainly.ca.connector.ejbca.dto.ejbca.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class SearchCertificatesRestResponseV2 {
     
     private List<CertificateRestResponseV2> certificates = new ArrayList<>();
-    
+
+    @JsonProperty("pagination_summary")
     private PaginationSummary paginationSummary;
 
     public SearchCertificatesRestResponseV2() {}
