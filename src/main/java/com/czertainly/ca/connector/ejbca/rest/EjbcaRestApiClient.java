@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
@@ -28,6 +29,7 @@ import java.net.URL;
 import java.util.Base64;
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public abstract class EjbcaRestApiClient {
     private static final Logger logger = LoggerFactory.getLogger(BaseApiClient.class);
@@ -121,9 +123,9 @@ public abstract class EjbcaRestApiClient {
                 .build();
     }
 
-    private static Mono<ClientResponse> handleHttpExceptions(ClientResponse clientResponse) {
-        return clientResponse.bodyToMono(ExceptionErrorRestResponse.class)
-                .flatMap(body -> Mono.error(new ConnectorClientException(body.getErrorMessage(), clientResponse.statusCode())));
+    public static Mono<ClientResponse> handleHttpExceptions(ClientResponse clientResponse) {
+        return clientResponse.bodyToMono(ExceptionErrorRestResponse.class).flatMap(body ->
+                Mono.error(new EjbcaRestApiException(body.getErrorMessage(), clientResponse.statusCode(), body)));
     }
 
     public static <T, R> R processRequest(Function<T, R> func, T request) {

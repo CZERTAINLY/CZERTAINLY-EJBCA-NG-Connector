@@ -5,12 +5,16 @@ import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.exception.ValidationError;
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.model.common.NameAndIdDto;
+import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
+import com.czertainly.api.model.common.attribute.content.JsonAttributeContent;
 import com.czertainly.ca.connector.ejbca.dto.AuthorityInstanceNameAndUuidDto;
 import com.czertainly.ca.connector.ejbca.dto.EjbcaVersionResponseDto;
 import com.czertainly.ca.connector.ejbca.dto.SelectedEjbcaInstanceDto;
+import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
 import com.czertainly.ca.connector.ejbca.service.EndEntityProfileEjbcaService;
 import com.czertainly.ca.connector.ejbca.util.EjbcaVersion;
+import com.czertainly.ca.connector.ejbca.util.LocalAttributeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,9 +33,14 @@ public class DiscoverySupportController {
     public void setEndEntityProfileEjbcaService(EndEntityProfileEjbcaService endEntityProfileEjbcaService) {
         this.endEntityProfileEjbcaService = endEntityProfileEjbcaService;
     }
+    @Autowired
+    public void setAuthorityInstanceService(AuthorityInstanceService authorityInstanceService) {
+        this.authorityInstanceService = authorityInstanceService;
+    }
 
     private EjbcaService ejbcaService;
     private EndEntityProfileEjbcaService endEntityProfileEjbcaService;
+    private AuthorityInstanceService authorityInstanceService;
 
     @RequestMapping(
             path = "/{ejbcaInstanceName}/ejbcaVersion",
@@ -59,9 +68,16 @@ public class DiscoverySupportController {
             method = RequestMethod.GET,
             produces = "application/json"
     )
-    public List<NameAndIdDto> listEndEntityProfiles(@PathVariable String ejbcaInstanceUuid) throws NotFoundException {
+    public List<JsonAttributeContent> listEndEntityProfiles(@PathVariable String ejbcaInstanceUuid) throws NotFoundException {
         checkEjbcaVersion(ejbcaInstanceUuid);
-        return endEntityProfileEjbcaService.listEndEntityProfiles(ejbcaInstanceUuid);
+
+        List<NameAndIdDto> endEntityProfiles = endEntityProfileEjbcaService.listEndEntityProfiles(ejbcaInstanceUuid);
+        List<JsonAttributeContent> contentList = new ArrayList<>();
+        for (NameAndIdDto endEntityProfile : endEntityProfiles) {
+            JsonAttributeContent content = new JsonAttributeContent(endEntityProfile.getName(), endEntityProfile);
+            contentList.add(content);
+        }
+        return contentList;
     }
 
     @RequestMapping(
@@ -70,9 +86,42 @@ public class DiscoverySupportController {
             consumes = "application/json",
             produces = "application/json"
     )
-    public List<NameAndIdDto> listEndEntityProfiles(@RequestBody SelectedEjbcaInstanceDto selectedEjbcaInstance) throws NotFoundException {
+    public List<JsonAttributeContent> listEndEntityProfiles(@RequestBody SelectedEjbcaInstanceDto selectedEjbcaInstance) throws NotFoundException {
         checkEjbcaVersion(selectedEjbcaInstance.getSelectedEjbcaInstance().getUuid());
-        return endEntityProfileEjbcaService.listEndEntityProfiles(selectedEjbcaInstance.getSelectedEjbcaInstance().getUuid());
+
+        List<NameAndIdDto> endEntityProfiles = endEntityProfileEjbcaService.listEndEntityProfiles(selectedEjbcaInstance.getSelectedEjbcaInstance().getUuid());
+        List<JsonAttributeContent> contentList = new ArrayList<>();
+        for (NameAndIdDto endEntityProfile : endEntityProfiles) {
+            JsonAttributeContent content = new JsonAttributeContent(endEntityProfile.getName(), endEntityProfile);
+            contentList.add(content);
+        }
+        return contentList;
+    }
+
+    @RequestMapping(
+            path = "/listCas",
+            method = RequestMethod.POST,
+            consumes = "application/json",
+            produces = "application/json"
+    )
+    public List<JsonAttributeContent> listCas(@RequestBody SelectedEjbcaInstanceDto selectedEjbcaInstance) throws NotFoundException {
+        checkEjbcaVersion(selectedEjbcaInstance.getSelectedEjbcaInstance().getUuid());
+
+        List<NameAndIdDto> cas = ejbcaService.getAvailableCas(selectedEjbcaInstance.getSelectedEjbcaInstance().getUuid());
+        return LocalAttributeUtil.convertFromNameAndId(cas);
+    }
+
+    @RequestMapping(
+            path = "/ejbcaRestApi",
+            method = RequestMethod.POST,
+            consumes = "application/json",
+            produces = "application/json"
+    )
+    public BaseAttributeContent<String> ejbcaRestApi(@RequestBody SelectedEjbcaInstanceDto selectedEjbcaInstance) throws NotFoundException {
+        checkEjbcaVersion(selectedEjbcaInstance.getSelectedEjbcaInstance().getUuid());
+
+        String url = authorityInstanceService.getRestApiUrl(selectedEjbcaInstance.getSelectedEjbcaInstance().getUuid());
+        return new BaseAttributeContent<>(url);
     }
 
     private void checkEjbcaVersion(String ejbcaInstanceName) throws NotFoundException {

@@ -29,11 +29,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
 import javax.net.ssl.*;
 import javax.xml.ws.BindingProvider;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
@@ -279,6 +282,22 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
         return webClient;
     }
 
+    @Override
+    public String getRestApiUrl(String authorityInstanceUuid) throws NotFoundException {
+        AuthorityInstance instance = authorityInstanceRepository
+                .findByUuid(authorityInstanceUuid)
+                .orElseThrow(() -> new NotFoundException(AuthorityInstance.class, authorityInstanceUuid));
+
+        URL wsUrl = null;
+        try {
+            wsUrl = new URL(instance.getUrl());
+        } catch (MalformedURLException e) {
+            logger.error(e.getMessage());
+        }
+
+        return "https://" + wsUrl.getHost() + (wsUrl.getPort() != -1 ? ":" + wsUrl.getPort() : "") + "/ejbca/ejbca-rest-api";
+    }
+
     private WebClient createRestApiConnection(AuthorityInstance instance) {
         List<AttributeDefinition> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData());
 
@@ -288,6 +307,7 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
 
         return WebClient
                 .builder()
+                .filter(ExchangeFilterFunction.ofResponseProcessor(EjbcaRestApiClient::handleHttpExceptions))
                 .clientConnector(new ReactorClientHttpConnector(httpClient)).build();
     }
 }

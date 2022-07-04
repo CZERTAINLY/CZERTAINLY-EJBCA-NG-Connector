@@ -3,12 +3,13 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 import com.czertainly.api.exception.ValidationError;
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.model.common.attribute.*;
+import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
 import com.czertainly.api.model.common.attribute.content.JsonAttributeContent;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.dto.AuthorityInstanceNameAndUuidDto;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificateCriteriaRestRequest;
 import com.czertainly.ca.connector.ejbca.service.DiscoveryAttributeService;
-import com.czertainly.ca.connector.ejbca.service.EjbcaService;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,44 +28,48 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryAttributeServiceImpl.class);
 
     public static final String ATTRIBUTE_EJBCA_INSTANCE = "ejbcaInstance";
-    public static final String ATTRIBUTE_EJBCA_VERSION = "ejbcaVersion";
     public static final String ATTRIBUTE_END_ENTITY_PROFILE = "endEntityProfile";
     public static final String ATTRIBUTE_EJBCA_RESTAPI_URL = "ejbcaRestApiUrl";
+    public static final String ATTRIBUTE_EJBCA_CA = "ca";
+    public static final String ATTRIBUTE_EJBCA_STATUS = "status";
+    public static final String ATTRIBUTE_EJBCA_ISSUED_AFTER = "issuedAfter";
 
 
     public static final String ATTRIBUTE_EJBCA_INSTANCE_LABEL = "EJBCA instance";
-    public static final String ATTRIBUTE_EJBCA_VERSION_LABEL = "EJBCA version";
     public static final String ATTRIBUTE_END_ENTITY_PROFILE_LABEL = "End Entity Profile";
     public static final String ATTRIBUTE_EJBCA_RESTAPI_URL_LABEL = "EJBCA REST API base URL";
+    public static final String ATTRIBUTE_EJBCA_CA_LABEL = "Certification Authority";
+    public static final String ATTRIBUTE_EJBCA_STATUS_LABEL = "Certificate status";
+    public static final String ATTRIBUTE_EJBCA_ISSUED_AFTER_LABEL = "Certificates issued after";
 
 
     @Autowired
     public void setAuthorityInstanceRepository(AuthorityInstanceRepository authorityInstanceRepository) {
         this.authorityInstanceRepository = authorityInstanceRepository;
     }
-    @Autowired
-    public void setEjbcaService(EjbcaService ejbcaService) {
-        this.ejbcaService = ejbcaService;
-    }
 
     private AuthorityInstanceRepository authorityInstanceRepository;
-    private EjbcaService ejbcaService;
 
     @Override
     public List<AttributeDefinition> getAttributes(String kind) {
+        if (!kind.equals("EJBCA")) {
+            throw new ValidationException("Unsupported kind: " + kind, new ValidationError("Unsupported kind: " + kind));
+        }
+        logger.info("Listing discovery attributes for {}", kind);
         List<AttributeDefinition> attributes = new ArrayList<>();
 
         attributes.add(prepareEjbcaInstanceAttribute());
-        //attributes.add(getEjbcaVersionString());
+        attributes.add(ejbcaRestApiUrl());
+        attributes.add(listCas());
         attributes.add(listEndEntityProfiles());
+        attributes.add(listStatus());
+        attributes.add(issuedAfter());
 
         return attributes;
     }
 
     @Override
     public boolean validateAttributes(String kind, List<RequestAttributeDto> attributes) {
-        List<ValidationError> errors = new ArrayList<>();
-
         if (attributes == null) {
             return false;
         }
@@ -74,19 +79,6 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         }
 
         AttributeDefinitionUtils.validateAttributes(getAttributes(kind), attributes);
-
-//        String ejbcaVersion = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_EJBCA_VERSION, attributes);
-//        if (StringUtils.isBlank(ejbcaVersion)) {
-//            errors.add(ValidationError.create("EJBCA version missing", ATTRIBUTE_EJBCA_VERSION));
-//            throw new ValidationException("EJBCA version missing", errors);
-//        }
-//        EjbcaVersion version = new EjbcaVersion(ejbcaVersion);
-//
-//        if (version.getTechVersion() < 7 || version.getMajorVersion() < 9) {
-//            logger.debug("{} does not supported discovery", ejbcaVersion);
-//            errors.add(ValidationError.create("Unsupported EJBCA version", ATTRIBUTE_EJBCA_VERSION));
-//            throw new ValidationException("Unsupported version: " + ejbcaVersion, errors);
-//        }
 
         return true;
     }
@@ -115,6 +107,33 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         return attribute;
     }
 
+    private AttributeDefinition listCas() {
+        AttributeDefinition attribute = new AttributeDefinition();
+        attribute.setUuid("ffe7c27a-48e4-41fa-93de-8ddac65fec46");
+        attribute.setName(ATTRIBUTE_EJBCA_CA);
+        attribute.setLabel(ATTRIBUTE_EJBCA_CA_LABEL);
+        attribute.setDescription("Available certification authorities for Discovery");
+        attribute.setType(AttributeType.JSON);
+        attribute.setRequired(false);
+        attribute.setReadOnly(false);
+        attribute.setVisible(true);
+        attribute.setList(true);
+        attribute.setMultiSelect(true);
+        attribute.setContent(List.of());
+
+        Set<AttributeCallbackMapping> mappings = new HashSet<>();
+        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE, "selectedEjbcaInstance", AttributeValueTarget.BODY));
+
+        AttributeCallback attributeCallback = new AttributeCallback();
+        attributeCallback.setCallbackContext("/v1/discoveryProvider/listCas");
+        attributeCallback.setCallbackMethod("POST");
+        attributeCallback.setMappings(mappings);
+
+        attribute.setAttributeCallback(attributeCallback);
+
+        return attribute;
+    }
+
     private AttributeDefinition listEndEntityProfiles() {
         AttributeDefinition attribute = new AttributeDefinition();
         attribute.setUuid("bbf2d142-f35a-437f-81c7-35c128881fc0");
@@ -122,11 +141,11 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setLabel(ATTRIBUTE_END_ENTITY_PROFILE_LABEL);
         attribute.setDescription("The End Entity Profile where Discovery process should search for Certificates");
         attribute.setType(AttributeType.JSON);
-        attribute.setRequired(true);
+        attribute.setRequired(false);
         attribute.setReadOnly(false);
         attribute.setVisible(true);
         attribute.setList(true);
-        attribute.setMultiSelect(false);
+        attribute.setMultiSelect(true);
         attribute.setContent(List.of());
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
@@ -138,6 +157,29 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attributeCallback.setMappings(mappings);
 
         attribute.setAttributeCallback(attributeCallback);
+
+        return attribute;
+    }
+
+    private AttributeDefinition listStatus() {
+        List<BaseAttributeContent<String>> statuses = new ArrayList<>();
+        for (SearchCertificateCriteriaRestRequest.CertificateStatus status : SearchCertificateCriteriaRestRequest.CertificateStatus.values()) {
+            BaseAttributeContent<String> content = new BaseAttributeContent<>(status.name());
+            statuses.add(content);
+        }
+
+        AttributeDefinition attribute = new AttributeDefinition();
+        attribute.setUuid("2aba1544-abdf-46a0-ab56-ac79f9163018");
+        attribute.setName(ATTRIBUTE_EJBCA_STATUS);
+        attribute.setLabel(ATTRIBUTE_EJBCA_STATUS_LABEL);
+        attribute.setDescription("Filter certificate status");
+        attribute.setType(AttributeType.JSON);
+        attribute.setRequired(false);
+        attribute.setReadOnly(false);
+        attribute.setVisible(true);
+        attribute.setList(true);
+        attribute.setMultiSelect(true);
+        attribute.setContent(statuses);
 
         return attribute;
     }
@@ -154,13 +196,12 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setVisible(true);
         attribute.setList(false);
         attribute.setMultiSelect(false);
-        //attribute.setContent(List.of().toArray());
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
         mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE, "selectedEjbcaInstance", AttributeValueTarget.BODY));
 
         AttributeCallback attributeCallback = new AttributeCallback();
-        attributeCallback.setCallbackContext("/v1/discoveryProvider/listEndEntityProfiles");
+        attributeCallback.setCallbackContext("/v1/discoveryProvider/ejbcaRestApi");
         attributeCallback.setCallbackMethod("POST");
         attributeCallback.setMappings(mappings);
 
@@ -169,29 +210,18 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         return attribute;
     }
 
-    private AttributeDefinition getEjbcaVersionString() {
+    private AttributeDefinition issuedAfter() {
         AttributeDefinition attribute = new AttributeDefinition();
-        attribute.setUuid("eda7a9fc-a663-4275-88b2-9591b932f731");
-        attribute.setName(ATTRIBUTE_EJBCA_VERSION);
-        attribute.setLabel(ATTRIBUTE_EJBCA_VERSION_LABEL);
-        attribute.setDescription("The version of EJBCA that is running on the instance");
-        attribute.setType(AttributeType.STRING);
+        attribute.setUuid("4954adc0-47f0-442d-9347-f270d9ac0074");
+        attribute.setName(ATTRIBUTE_EJBCA_ISSUED_AFTER);
+        attribute.setLabel(ATTRIBUTE_EJBCA_ISSUED_AFTER_LABEL);
+        attribute.setDescription("The date after the certificates were issued");
+        attribute.setType(AttributeType.DATETIME);
         attribute.setRequired(false);
-        attribute.setReadOnly(true);
+        attribute.setReadOnly(false);
         attribute.setVisible(true);
         attribute.setList(false);
         attribute.setMultiSelect(false);
-        // attribute.setValue(""); // empty string  and the value will be based on the callback
-
-        Set<AttributeCallbackMapping> mappings = new HashSet<>();
-        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE + ".name", "ejbcaInstanceName", AttributeValueTarget.PATH_VARIABLE));
-
-        AttributeCallback attributeCallback = new AttributeCallback();
-        attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceName}/ejbcaVersion");
-        attributeCallback.setCallbackMethod("GET");
-        attributeCallback.setMappings(mappings);
-
-        attribute.setAttributeCallback(attributeCallback);
 
         return attribute;
     }

@@ -5,6 +5,7 @@ import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.model.common.NameAndIdDto;
 import com.czertainly.api.model.common.attribute.RequestAttributeDto;
 import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
+import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.ca.connector.ejbca.api.CertificateControllerImpl;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
@@ -35,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.*;
 import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_KEY_RECOVERABLE;
@@ -184,7 +186,7 @@ public class EjbcaServiceImpl implements EjbcaService {
        request.setPagination(pagination);
 
        SearchCertificatesRestResponseV2 response = ejbcaWC.post()
-               .uri(restUrl)
+               .uri(restUrl + "/v2/certificate")
                .contentType(MediaType.APPLICATION_JSON)
                .bodyValue(request)
                .retrieve()
@@ -196,6 +198,21 @@ public class EjbcaServiceImpl implements EjbcaService {
        }
     }
 
+    @Override
+    public List<NameAndIdDto> getAvailableCas(String authorityInstanceUuid) throws NotFoundException {
+        EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityInstanceUuid);
+        try {
+            List<NameAndId> cas = ejbcaWS.getAvailableCAs();
+            if (cas == null || cas.isEmpty()) {
+                throw new NotFoundException("CertificateProfile on ca", authorityInstanceUuid);
+            }
+            return cas.stream().map(p -> new NameAndIdDto(p.getId(), p.getName())).collect(Collectors.toList());
+        } catch (AuthorizationDeniedException_Exception e) {
+            throw new AccessDeniedException("Authorization denied on EJBCA", e);
+        } catch (EjbcaException_Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     public UserDataVOWS getUser(EjbcaWS ejbcaWS, String username) throws NotFoundException {
         UserMatch userMatch = EjbcaUtils.prepareUsernameMatch(username);

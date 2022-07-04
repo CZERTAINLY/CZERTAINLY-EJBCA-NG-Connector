@@ -2,6 +2,7 @@ package com.czertainly.ca.connector.ejbca.service;
 
 import com.czertainly.api.exception.AlreadyExistException;
 import com.czertainly.api.exception.NotFoundException;
+import com.czertainly.api.model.common.NameAndIdDto;
 import com.czertainly.api.model.common.attribute.RequestAttributeDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
@@ -23,4 +24,6 @@ public interface EjbcaService {
     EjbcaVersion getEjbcaVersion(String authorityInstanceUuid) throws NotFoundException;
 
     void searchCertificates(String authorityInstanceUuid, String restUrl) throws NotFoundException;
+
+    List<NameAndIdDto> getAvailableCas(String authorityInstanceUuid) throws NotFoundException;
 }

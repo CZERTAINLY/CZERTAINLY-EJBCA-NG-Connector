@@ -129,6 +129,60 @@ public class SearchCertificateCriteriaRestRequest {
     }
 
     /**
+     * The set of certificate status values that are expected for SearchCertificateCriteriaRestRequest.value attribute in case SearchCertificateCriteriaRestRequest.property = 'STATUS'.
+     */
+    public enum CertificateStatus {
+        CERT_ACTIVE,
+        CERT_REVOKED,
+        REVOCATION_REASON_UNSPECIFIED,
+        REVOCATION_REASON_KEYCOMPROMISE,
+        REVOCATION_REASON_CACOMPROMISE,
+        REVOCATION_REASON_AFFILIATIONCHANGED,
+        REVOCATION_REASON_SUPERSEDED,
+        REVOCATION_REASON_CESSATIONOFOPERATION,
+        REVOCATION_REASON_CERTIFICATEHOLD,
+        REVOCATION_REASON_REMOVEFROMCRL,
+        REVOCATION_REASON_PRIVILEGESWITHDRAWN,
+        REVOCATION_REASON_AACOMPROMISE;
+
+        /**
+         * Resolves the CertificateStatus using its name or returns null.
+         *
+         * @param name status name.
+         *
+         * @return CertificateStatus using its name or null.
+         */
+        public static CertificateStatus resolveCertificateStatusByName(final String name) {
+            for (CertificateStatus certificateStatus : values()) {
+                if (certificateStatus.name().equalsIgnoreCase(name)) {
+                    return certificateStatus;
+                }
+            }
+            return null;
+        }
+
+        /**
+         * The subset of revocation reasons that are allowed for input in SearchCertificateCriteriaRestRequest.value.
+         *
+         * @return subset of criteria operations.
+         */
+        public static EnumSet<CertificateStatus> REVOCATION_REASONS() {
+            return EnumSet.of(
+                    REVOCATION_REASON_UNSPECIFIED,
+                    REVOCATION_REASON_KEYCOMPROMISE,
+                    REVOCATION_REASON_CACOMPROMISE,
+                    REVOCATION_REASON_AFFILIATIONCHANGED,
+                    REVOCATION_REASON_SUPERSEDED,
+                    REVOCATION_REASON_CESSATIONOFOPERATION,
+                    REVOCATION_REASON_CERTIFICATEHOLD,
+                    REVOCATION_REASON_REMOVEFROMCRL,
+                    REVOCATION_REASON_PRIVILEGESWITHDRAWN,
+                    REVOCATION_REASON_AACOMPROMISE
+            );
+        }
+    }
+
+    /**
      * Return a builder instance for this class.
      *
      * @return builder instance for this class.

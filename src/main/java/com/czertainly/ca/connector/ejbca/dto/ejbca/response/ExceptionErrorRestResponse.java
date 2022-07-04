@@ -1,8 +1,12 @@
 package com.czertainly.ca.connector.ejbca.dto.ejbca.response;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class ExceptionErrorRestResponse {
 
+    @JsonProperty("error_code")
     private int errorCode;
+    @JsonProperty("error_message")
     private String errorMessage;
 
     public ExceptionErrorRestResponse() {}

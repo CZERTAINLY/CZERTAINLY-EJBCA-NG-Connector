@@ -25,4 +25,6 @@ public interface AuthorityInstanceService {
     WebClient getRestApiConnection(String uuid) throws NotFoundException;
 
     WebClient getRestApiConnection(AuthorityInstance instance);
+
+    String getRestApiUrl(String authorityInstanceUuid) throws NotFoundException;
 }
