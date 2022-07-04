@@ -122,10 +122,10 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setContent(List.of());
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
-        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE, "selectedEjbcaInstance", AttributeValueTarget.BODY));
+        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE+".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
 
         AttributeCallback attributeCallback = new AttributeCallback();
-        attributeCallback.setCallbackContext("/v1/discoveryProvider/listCas");
+        attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/listCas");
         attributeCallback.setCallbackMethod("POST");
         attributeCallback.setMappings(mappings);
 
@@ -149,10 +149,10 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setContent(List.of());
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
-        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE, "selectedEjbcaInstance", AttributeValueTarget.BODY));
+        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE+".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
 
         AttributeCallback attributeCallback = new AttributeCallback();
-        attributeCallback.setCallbackContext("/v1/discoveryProvider/listEndEntityProfiles");
+        attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/listEndEntityProfiles");
         attributeCallback.setCallbackMethod("POST");
         attributeCallback.setMappings(mappings);
 
@@ -198,10 +198,10 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setMultiSelect(false);
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
-        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE, "selectedEjbcaInstance", AttributeValueTarget.BODY));
+        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE+".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
 
         AttributeCallback attributeCallback = new AttributeCallback();
-        attributeCallback.setCallbackContext("/v1/discoveryProvider/ejbcaRestApi");
+        attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/ejbcaRestApi");
         attributeCallback.setCallbackMethod("POST");
         attributeCallback.setMappings(mappings);
 
