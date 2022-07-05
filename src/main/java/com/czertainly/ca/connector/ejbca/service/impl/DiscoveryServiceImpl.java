@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -108,7 +109,16 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         final List<NameAndIdDto> cas = AttributeDefinitionUtils.getJsonAttributeContentDataList(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_CA, request.getAttributes(), NameAndIdDto.class);
         final List<NameAndIdDto> eeProfiles = AttributeDefinitionUtils.getJsonAttributeContentDataList(DiscoveryAttributeServiceImpl.ATTRIBUTE_END_ENTITY_PROFILE, request.getAttributes(), NameAndIdDto.class);
         final List<String> statuses = AttributeDefinitionUtils.getAttributeContentValueList(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_STATUS, request.getAttributes(), BaseAttributeContent.class);
-        final ZonedDateTime issuedAfter = AttributeDefinitionUtils.getAttributeContentValue(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_ISSUED_AFTER, request.getAttributes(), DateTimeAttributeContent.class);
+
+        ZonedDateTime issuedAfter = null;
+        if (request.getKind().equals("EJBCA")) {
+            issuedAfter = AttributeDefinitionUtils.getAttributeContentValue(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_ISSUED_AFTER, request.getAttributes(), DateTimeAttributeContent.class);
+        }
+        if (request.getKind().equals("EJBCA-SCHEDULE")) {
+            Integer issuedDaysBefore = AttributeDefinitionUtils.getAttributeContentValue(DiscoveryAttributeServiceImpl.ATTRIBUTE_ISSUED_DAYS_BEFORE, request.getAttributes(), BaseAttributeContent.class);
+            issuedAfter = ZonedDateTime.now();
+            issuedAfter = issuedAfter.minusDays(issuedDaysBefore);
+        }
 
         SearchCertificatesRestRequestV2 searchRequest = prepareSearchRequest(cas, eeProfiles, statuses, issuedAfter);
         SearchCertificatesRestResponseV2 searchResponse = null;
@@ -180,7 +190,11 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         c.setOperation(SearchCertificateCriteriaRestRequest.CriteriaOperation.AFTER.name());
         c.setProperty(SearchCertificateCriteriaRestRequest.CriteriaProperty.ISSUED_DATE.name());
         if (issuedAfter != null) {
-            c.setValue(issuedAfter.toString());
+            // convert ZonedDateTime to appropriate format for EJBCA (2019-04-18T07:47:26Z)
+            OffsetDateTime odt = issuedAfter.toOffsetDateTime().withOffsetSameInstant(ZoneOffset.UTC);
+            String dateValue = odt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX"));
+
+            c.setValue(dateValue);
         } else {
             c.setValue("2000-01-01T00:00:00Z"); // before the EJBCA was born
         }

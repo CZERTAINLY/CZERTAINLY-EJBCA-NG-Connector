@@ -4,12 +4,15 @@ import com.czertainly.api.interfaces.connector.InfoController;
 import com.czertainly.api.model.client.connector.InfoResponse;
 import com.czertainly.api.model.core.connector.FunctionGroupCode;
 import com.czertainly.ca.connector.ejbca.EndpointsListener;
+import com.czertainly.ca.connector.ejbca.enums.DiscoveryKind;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @RestController
 public class InfoControllerImpl implements InfoController {
@@ -26,6 +29,7 @@ public class InfoControllerImpl implements InfoController {
     public List<InfoResponse> listSupportedFunctions() {
         logger.info("Listing the end points for EJBCA NG connector");
         List<String> kinds = List.of("EJBCA");
+        EnumSet.allOf(DiscoveryKind.class);
         List<InfoResponse> functions = new ArrayList<>();
         functions.add(new InfoResponse(
                 kinds,
@@ -33,7 +37,7 @@ public class InfoControllerImpl implements InfoController {
                 endpointsListener.getEndpoints(FunctionGroupCode.AUTHORITY_PROVIDER))
         );
         functions.add(new InfoResponse(
-                kinds,
+                Stream.of(DiscoveryKind.values()).map(Enum::name).collect(Collectors.toList()),
                 FunctionGroupCode.DISCOVERY_PROVIDER,
                 endpointsListener.getEndpoints(FunctionGroupCode.DISCOVERY_PROVIDER))
         );

@@ -9,6 +9,7 @@ import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.dto.AuthorityInstanceNameAndUuidDto;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificateCriteriaRestRequest;
+import com.czertainly.ca.connector.ejbca.enums.DiscoveryKind;
 import com.czertainly.ca.connector.ejbca.service.DiscoveryAttributeService;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.slf4j.Logger;
@@ -33,6 +34,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
     public static final String ATTRIBUTE_EJBCA_CA = "ca";
     public static final String ATTRIBUTE_EJBCA_STATUS = "status";
     public static final String ATTRIBUTE_EJBCA_ISSUED_AFTER = "issuedAfter";
+    public static final String ATTRIBUTE_ISSUED_DAYS_BEFORE = "issuedDaysBefore";
 
 
     public static final String ATTRIBUTE_EJBCA_INSTANCE_LABEL = "EJBCA instance";
@@ -41,6 +43,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
     public static final String ATTRIBUTE_EJBCA_CA_LABEL = "Certification Authority";
     public static final String ATTRIBUTE_EJBCA_STATUS_LABEL = "Certificate status";
     public static final String ATTRIBUTE_EJBCA_ISSUED_AFTER_LABEL = "Certificates issued after";
+    public static final String ATTRIBUTE_ISSUED_DAYS_BEFORE_LABEL = "Number of days";
 
 
     @Autowired
@@ -52,18 +55,25 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
 
     @Override
     public List<AttributeDefinition> getAttributes(String kind) {
-        if (!kind.equals("EJBCA")) {
+        if (!kind.equals(DiscoveryKind.EJBCA.name()) && !kind.equals(DiscoveryKind.EJBCA_SCHEDULE.name())) {
             throw new ValidationException("Unsupported kind: " + kind, new ValidationError("Unsupported kind: " + kind));
         }
         logger.info("Listing discovery attributes for {}", kind);
-        List<AttributeDefinition> attributes = new ArrayList<>();
 
+        List<AttributeDefinition> attributes = new ArrayList<>();
         attributes.add(prepareEjbcaInstanceAttribute());
         attributes.add(ejbcaRestApiUrl());
         attributes.add(listCas());
         attributes.add(listEndEntityProfiles());
         attributes.add(listStatus());
-        attributes.add(issuedAfter());
+
+        if (kind.equals(DiscoveryKind.EJBCA.name())) {
+            attributes.add(issuedAfter());
+        }
+
+        if (kind.equals(DiscoveryKind.EJBCA_SCHEDULE.name())) {
+            attributes.add(issuedDaysBefore());
+        }
 
         return attributes;
     }
@@ -74,7 +84,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
             return false;
         }
 
-        if (!kind.equals("EJBCA")) {
+        if (!kind.equals(DiscoveryKind.EJBCA.name()) && !kind.equals(DiscoveryKind.EJBCA_SCHEDULE.name())) {
             throw new ValidationException("Unsupported kind: " + kind);
         }
 
@@ -222,6 +232,23 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setVisible(true);
         attribute.setList(false);
         attribute.setMultiSelect(false);
+
+        return attribute;
+    }
+
+    private AttributeDefinition issuedDaysBefore() {
+        AttributeDefinition attribute = new AttributeDefinition();
+        attribute.setUuid("4a92a6c5-38c0-4ebf-8297-594d39572c9c");
+        attribute.setName(ATTRIBUTE_ISSUED_DAYS_BEFORE);
+        attribute.setLabel(ATTRIBUTE_ISSUED_DAYS_BEFORE_LABEL);
+        attribute.setDescription("Maximum number of days before the certificate was issued, from running the discovery");
+        attribute.setType(AttributeType.INTEGER);
+        attribute.setRequired(true);
+        attribute.setReadOnly(false);
+        attribute.setVisible(true);
+        attribute.setList(false);
+        attribute.setMultiSelect(false);
+        attribute.setContent(new BaseAttributeContent<>(5));
 
         return attribute;
     }
