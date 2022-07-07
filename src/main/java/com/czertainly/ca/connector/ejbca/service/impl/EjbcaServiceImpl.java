@@ -5,23 +5,38 @@ import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.model.common.NameAndIdDto;
 import com.czertainly.api.model.common.attribute.RequestAttributeDto;
 import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
+import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.ca.connector.ejbca.api.CertificateControllerImpl;
+import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.request.Pagination;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificateSortRestRequest;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificatesRestRequestV2;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.response.SearchCertificatesRestResponseV2;
+import com.czertainly.ca.connector.ejbca.rest.EjbcaRestApiClient;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
 import com.czertainly.ca.connector.ejbca.util.EjbcaUtils;
+import com.czertainly.ca.connector.ejbca.util.EjbcaVersion;
 import com.czertainly.ca.connector.ejbca.ws.*;
 import com.czertainly.core.util.AttributeDefinitionUtils;
+import io.netty.handler.ssl.SslContext;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.*;
 import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_KEY_RECOVERABLE;
@@ -146,6 +161,42 @@ public class EjbcaServiceImpl implements EjbcaService {
         } catch (NotFoundException_Exception e) {
             throw new NotFoundException("Certificate");
         } catch (Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
+    public EjbcaVersion getEjbcaVersion(String authorityInstanceUuid) throws NotFoundException {
+        EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityInstanceUuid);
+        String ejbcaVersion = ejbcaWS.getEjbcaVersion();
+        return new EjbcaVersion(ejbcaVersion);
+    }
+
+    @Override
+    public SearchCertificatesRestResponseV2 searchCertificates(String authorityInstanceUuid, String restUrl, SearchCertificatesRestRequestV2 request) throws NotFoundException {
+       WebClient ejbcaWC = authorityInstanceService.getRestApiConnection(authorityInstanceUuid);
+
+        return ejbcaWC.post()
+                .uri(restUrl + "/v2/certificate/search")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(request)
+                .retrieve()
+                .bodyToMono(SearchCertificatesRestResponseV2.class)
+                .block();
+    }
+
+    @Override
+    public List<NameAndIdDto> getAvailableCas(String authorityInstanceUuid) throws NotFoundException {
+        EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityInstanceUuid);
+        try {
+            List<NameAndId> cas = ejbcaWS.getAvailableCAs();
+            if (cas == null || cas.isEmpty()) {
+                throw new NotFoundException("CertificateProfile on ca", authorityInstanceUuid);
+            }
+            return cas.stream().map(p -> new NameAndIdDto(p.getId(), p.getName())).collect(Collectors.toList());
+        } catch (AuthorizationDeniedException_Exception e) {
+            throw new AccessDeniedException("Authorization denied on EJBCA", e);
+        } catch (EjbcaException_Exception e) {
             throw new IllegalStateException(e);
         }
     }

@@ -13,22 +13,31 @@ import com.czertainly.api.model.core.credential.CredentialDto;
 import com.czertainly.ca.connector.ejbca.config.ApplicationConfig;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
+import com.czertainly.ca.connector.ejbca.rest.EjbcaRestApiClient;
 import com.czertainly.ca.connector.ejbca.service.AttributeService;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.ws.EjbcaWS;
 import com.czertainly.ca.connector.ejbca.ws.EjbcaWSService;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import com.czertainly.core.util.KeyStoreUtils;
+import io.netty.handler.ssl.SslContext;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 
 import javax.net.ssl.*;
 import javax.xml.ws.BindingProvider;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
@@ -43,12 +52,13 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
     private static final Logger logger = LoggerFactory.getLogger(AuthorityInstanceServiceImpl.class);
 
     private static final Map<Long, EjbcaWS> connectionsCache = new ConcurrentHashMap<>();
+    private static final Map<Long, WebClient> connectionsRestApiCache = new ConcurrentHashMap<>();
 
     @Value("${ejbca.timeout.connect:500}")
     private int connectionTimeout;
 
     @Value("${ejbca.timeout.request:1500}")
-    private int requsetTimeout;
+    private int requestTimeout;
 
     @Autowired
     private AuthorityInstanceRepository authorityInstanceRepository;
@@ -245,5 +255,69 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to initialize SSLSocketFactory.", e);
         }
+    }
+
+    @Override
+    public WebClient getRestApiConnection(String uuid) throws NotFoundException {
+        AuthorityInstance instance = authorityInstanceRepository
+                .findByUuid(uuid)
+                .orElseThrow(() -> new NotFoundException(AuthorityInstance.class, uuid));
+        return getRestApiConnection(instance);
+    }
+
+    @Override
+    public synchronized WebClient getRestApiConnection(AuthorityInstance instance) {
+        WebClient webClient = connectionsRestApiCache.get(instance.getId());
+        if (webClient != null) {
+            return webClient;
+        }
+
+        webClient = createRestApiConnection(instance);
+
+        try {
+            connectionsRestApiCache.put(instance.getId(), webClient);
+        } catch (Exception e) {
+            logger.error("Fail to cache REST API connection to CA {} due to error {}", instance.getId(), e.getMessage(), e);
+        }
+
+        return webClient;
+    }
+
+    @Override
+    public String getRestApiUrl(String authorityInstanceUuid) throws NotFoundException {
+        AuthorityInstance instance = authorityInstanceRepository
+                .findByUuid(authorityInstanceUuid)
+                .orElseThrow(() -> new NotFoundException(AuthorityInstance.class, authorityInstanceUuid));
+
+        URL wsUrl = null;
+        try {
+            wsUrl = new URL(instance.getUrl());
+        } catch (MalformedURLException e) {
+            logger.error(e.getMessage());
+        }
+
+        return "https://" + wsUrl.getHost() + (wsUrl.getPort() != -1 ? ":" + wsUrl.getPort() : "") + "/ejbca/ejbca-rest-api";
+    }
+
+    private WebClient createRestApiConnection(AuthorityInstance instance) {
+        List<AttributeDefinition> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData());
+
+        /**
+         * 1 certificate in response ~ 2000 bytes * 1000 = 2000000
+         */
+        final int size = 2000 * 1000;
+        final ExchangeStrategies strategies = ExchangeStrategies.builder()
+                .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(size))
+                .build();
+
+        SslContext sslContext = EjbcaRestApiClient.createSslContext(attributes);
+
+        HttpClient httpClient = HttpClient.create().secure(t -> t.sslContext(sslContext));
+
+        return WebClient
+                .builder()
+                .filter(ExchangeFilterFunction.ofResponseProcessor(EjbcaRestApiClient::handleHttpExceptions))
+                .exchangeStrategies(strategies)
+                .clientConnector(new ReactorClientHttpConnector(httpClient)).build();
     }
 }

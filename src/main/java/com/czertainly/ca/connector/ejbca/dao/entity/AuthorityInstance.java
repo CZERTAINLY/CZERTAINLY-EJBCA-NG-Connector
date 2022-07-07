@@ -1,6 +1,7 @@
 package com.czertainly.ca.connector.ejbca.dao.entity;
 
 import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceDto;
+import com.czertainly.ca.connector.ejbca.dto.AuthorityInstanceNameAndUuidDto;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -130,6 +131,14 @@ public class AuthorityInstance {
         if (attributes != null) {
             dto.setAttributes(AttributeDefinitionUtils.deserialize(attributes));
         }
+
+        return dto;
+    }
+
+    public AuthorityInstanceNameAndUuidDto mapToNameAndUuidDto() {
+        AuthorityInstanceNameAndUuidDto dto = new AuthorityInstanceNameAndUuidDto();
+        dto.setName(this.name);
+        dto.setUuid(this.uuid);
 
         return dto;
     }
