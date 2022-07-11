@@ -112,7 +112,6 @@ public class AuthorityInstanceControllerImpl implements AuthorityInstanceControl
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
         mappings.add(new AttributeCallbackMapping("authorityId", AttributeValueTarget.PATH_VARIABLE, uuid));
-        mappings.add(new AttributeCallbackMapping(endEntityProfile.getName(), "endEntityProfileId.id", AttributeValueTarget.PATH_VARIABLE));
         mappings.add(new AttributeCallbackMapping(ATTRIBUTE_END_ENTITY_PROFILE+".data.id", "endEntityProfileId", AttributeValueTarget.PATH_VARIABLE));
 
         AttributeDefinition certificateProfile = new AttributeDefinition();
@@ -238,7 +237,7 @@ public class AuthorityInstanceControllerImpl implements AuthorityInstanceControl
         usernamePostfix.setVisible(true);
         usernamePostfix.setList(false);
         usernamePostfix.setMultiSelect(false);
-        usernamePrefix.setContent(new BaseAttributeContent<>("-generated"));
+        usernamePostfix.setContent(new BaseAttributeContent<>("-generated"));
         attrs.add(usernamePostfix);
 
         return attrs;
