@@ -51,4 +51,9 @@ public class DiscoveryControllerImpl implements DiscoveryController {
         DiscoveryHistory history = discoveryHistoryService.getHistoryByUuid(uuid);
         return discoveryService.getProviderDtoData(request, history);
     }
+
+    @Override
+    public void deleteDiscovery(String uuid) throws IOException, NotFoundException {
+        discoveryService.deleteDiscovery(uuid);
+    }
 }

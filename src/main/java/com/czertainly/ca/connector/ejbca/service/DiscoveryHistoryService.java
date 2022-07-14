@@ -13,4 +13,6 @@ public interface DiscoveryHistoryService {
     DiscoveryHistory getHistoryByUuid(String uuid) throws NotFoundException;
 
     void setHistory(DiscoveryHistory history);
+
+    void deleteHistory(DiscoveryHistory history);
 }

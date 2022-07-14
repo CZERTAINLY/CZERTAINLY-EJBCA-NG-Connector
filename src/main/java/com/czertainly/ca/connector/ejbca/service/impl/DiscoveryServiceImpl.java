@@ -99,6 +99,14 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         return dto;
     }
 
+    @Override
+    public void deleteDiscovery(String uuid) throws NotFoundException {
+        DiscoveryHistory discoveryHistory = discoveryHistoryService.getHistoryByUuid(uuid);
+        List<Certificate> certificates = certificateRepository.findByDiscoveryId(discoveryHistory.getId());
+        certificateRepository.deleteAll(certificates);
+        discoveryHistoryService.deleteHistory(discoveryHistory);
+    }
+
     private void discoverCertificatesInternal(DiscoveryRequestDto request, DiscoveryHistory history) throws NotFoundException {
         logger.info("Discovery initiated for the request with name {}", request.getName());
         Map<String, Object> meta = new LinkedHashMap<>();

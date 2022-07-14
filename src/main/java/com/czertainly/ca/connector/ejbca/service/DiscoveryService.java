@@ -13,4 +13,6 @@ public interface DiscoveryService {
     void discoverCertificate(DiscoveryRequestDto request, DiscoveryHistory history) throws IOException, NotFoundException;
 
     DiscoveryProviderDto getProviderDtoData(DiscoveryDataRequestDto request, DiscoveryHistory history);
+
+    void deleteDiscovery(String uuid) throws NotFoundException;
 }

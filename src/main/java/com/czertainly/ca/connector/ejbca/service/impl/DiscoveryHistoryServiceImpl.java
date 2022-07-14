@@ -53,4 +53,9 @@ public class DiscoveryHistoryServiceImpl implements DiscoveryHistoryService {
     public void setHistory(DiscoveryHistory history) {
         discoveryHistoryRepository.save(history);
     }
+
+    @Override
+    public void deleteHistory(DiscoveryHistory history) {
+        discoveryHistoryRepository.delete(history);
+    }
 }
