@@ -136,7 +136,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
 
         AttributeCallback attributeCallback = new AttributeCallback();
         attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/listCas");
-        attributeCallback.setCallbackMethod("POST");
+        attributeCallback.setCallbackMethod("GET");
         attributeCallback.setMappings(mappings);
 
         attribute.setAttributeCallback(attributeCallback);
@@ -163,7 +163,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
 
         AttributeCallback attributeCallback = new AttributeCallback();
         attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/listEndEntityProfiles");
-        attributeCallback.setCallbackMethod("POST");
+        attributeCallback.setCallbackMethod("GET");
         attributeCallback.setMappings(mappings);
 
         attribute.setAttributeCallback(attributeCallback);
@@ -212,7 +212,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
 
         AttributeCallback attributeCallback = new AttributeCallback();
         attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/ejbcaRestApi");
-        attributeCallback.setCallbackMethod("POST");
+        attributeCallback.setCallbackMethod("GET");
         attributeCallback.setMappings(mappings);
 
         attribute.setAttributeCallback(attributeCallback);

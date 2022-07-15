@@ -32,6 +32,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -97,6 +98,14 @@ public class DiscoveryServiceImpl implements DiscoveryService {
             dto.setCertificateData(certificateRepository.findAllByDiscoveryId(history.getId(), page).stream().map(Certificate::mapToDto).collect(Collectors.toList()));
         }
         return dto;
+    }
+
+    @Override
+    public void deleteDiscovery(String uuid) throws NotFoundException {
+        DiscoveryHistory discoveryHistory = discoveryHistoryService.getHistoryByUuid(uuid);
+        List<Certificate> certificates = certificateRepository.findByDiscoveryId(discoveryHistory.getId());
+        certificateRepository.deleteAll(certificates);
+        discoveryHistoryService.deleteHistory(discoveryHistory);
     }
 
     private void discoverCertificatesInternal(DiscoveryRequestDto request, DiscoveryHistory history) throws NotFoundException {
@@ -216,7 +225,7 @@ public class DiscoveryServiceImpl implements DiscoveryService {
 
             cert.setUuid(UUID.randomUUID().toString());
             cert.setDiscoveryId(discoveryHistory.getId());
-            cert.setBase64Content(Base64.getEncoder().encodeToString(certificateRestResponseV2.getCertificate()));
+            cert.setBase64Content(new String(certificateRestResponseV2.getCertificate(), StandardCharsets.UTF_8));
 
             Map<String, Object> meta = new LinkedHashMap<>();
             meta.put("certificateProfileId", certificateRestResponseV2.getCertificateProfileId());
