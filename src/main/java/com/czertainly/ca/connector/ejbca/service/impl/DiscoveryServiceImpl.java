@@ -130,15 +130,18 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         }
 
         SearchCertificatesRestRequestV2 searchRequest = prepareSearchRequest(cas, eeProfiles, statuses, issuedAfter);
-        SearchCertificatesRestResponseV2 searchResponse = null;
-        while (searchResponse == null || searchResponse.getPaginationSummary().getTotalCerts() == null) {
+        SearchCertificatesRestResponseV2 searchResponse;
+        do {
             searchResponse = ejbcaService.searchCertificates(instance.getUuid(), restApiUrl, searchRequest);
+            // break the loop if there are no certificates returned from EJBCA
+            if (searchResponse.getCertificates().isEmpty()){
+                break;
+            }
             // set the next page
             searchRequest.getPagination().setCurrentPage(searchResponse.getPaginationSummary().getCurrentPage()+1);
-
             parseAndCreateCertificateEntry(searchResponse, history);
             certificatesFound = certificatesFound + searchResponse.getCertificates().size();
-        }
+        } while (searchResponse.getPaginationSummary().getTotalCerts() == null);
 
         history.setStatus(DiscoveryStatus.COMPLETED);
 
