@@ -1,7 +1,9 @@
 package com.czertainly.ca.connector.ejbca;
 
 import com.czertainly.api.exception.*;
+import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.model.common.ErrorMessageDto;
+import com.czertainly.ca.connector.ejbca.ws.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -91,6 +93,34 @@ public class ExceptionHandlingAdvice {
 //        // re-throw to let the Spring Security handle it
 //        throw ex;
 //    }
+
+    /**
+     * Handler for EJBCA Web Service exceptions.
+     *
+     * @return
+     */
+    @ExceptionHandler({
+            EjbcaException.class
+    })
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorMessageDto handleMessageNotReadable(EjbcaException ex) {
+        LOG.info("HTTP 400: {}", ex.getMessage());
+        return ErrorMessageDto.getInstance(ex.getMessage());
+    }
+
+    /**
+     * Handler for EJBCA Web Service exceptions.
+     *
+     * @return
+     */
+    @ExceptionHandler({
+            CertificateOperationException.class
+    })
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorMessageDto handleMessageNotReadable(CertificateOperationException ex) {
+        LOG.info("HTTP 400: {}", ex.getMessage());
+        return ErrorMessageDto.getInstance(ex.getMessage());
+    }
 
     /**
      * Handler for {@link Exception}.
