@@ -7,15 +7,21 @@ EJBCA NG `Connector` is the implementation of the following `Function Groups` an
 | Function Group | Kind |
 | --- | --- |
 | `Authority Provider` | `EJBCA` |
+| `Discovery Provider` | `EJBCA`, `EJBCA_SCHEDULE` |
 
 EJBCA NG `Connector` is the implementation of certificate management for EJBCA that is compatible with the v2 client operations interafce. The `Connector` is developed to work with SOAP Web Services calls.
 
 > It is expected that the REST API calls will be implemented as option in the future release, because of some limitations of the EJBCA Web Service, for example limiting the number of end entities and certificates, that can be fetched.
 
 EJBCA NG `Connector` allows you to perform the following operations:
-- Issue a certificate
-- Renew a certificate
-- Revoke a Certificate
+
+`Authority Provider`
+- Issue certificate
+- Renew certificate
+- Revoke certificate
+
+`Discovery Provider`
+- Discover certificates
 
 ## Database requirements
 
@@ -28,6 +34,14 @@ EJBCA NG works under the principle of `RA Profiles`. The `Connector` provides th
 With the help of `RA Profiles` and the CSR information provided by the `Client` using the REST API, the `Connector` communicates with the `Authority` to get the `Certificate`.
 
 To know more about the `Core`, refer to [CZERTAINLY Core](https://github.com/3KeyCompany/CZERTAINLY-Core)
+
+## Certificate Discovery
+
+The `Certificate` discovery in the EJBCA NG `Connector` works with the V2 `Certificate` Search API from EJBCA. Older versions of EJBCA that do not support V2 Search API are not supported.
+
+There are two types of `Discovery`:
+- `EJBCA`
+- `EJBCA_SCHEDULE`
 
 ### `RA Profile` attributes
 
@@ -50,9 +64,19 @@ For issuing of new `Certificate`, you can use the following optional attributes 
 
 The EJBCA username and attributes for to issue `Certificate` are written as `Metadata` in the `Certificate` object and can be used in future operations.
 
+### Discover `Certificate` attributes
+
+For discovering `Certificates` from the EJBCA, the following attributes can be used:
+- Authority Instance Name
+- API Base URL
+- Certificate Authority
+- Certificate Profile
+- End Entity Profile
+- Date after which the certificates were issued
+
 ## Interfaces
 
-EJBCA NG `Connector` implements `v2 Authority Provider` interfaces. To learn more about the interfaces and end points, refer to the [CZERTAINLY Interfaces](https://github.com/3KeyCompany/CZERTAINLY-Interfaces).
+EJBCA NG `Connector` implements `v2 Authority Provider` and `Discovery Provider` interfaces. To learn more about the interfaces and end points, refer to the [CZERTAINLY Interfaces](https://github.com/3KeyCompany/CZERTAINLY-Interfaces).
 
 For more information, please refer to the [CZERTAINLY documentation](https://docs.czertainly.com).
 
