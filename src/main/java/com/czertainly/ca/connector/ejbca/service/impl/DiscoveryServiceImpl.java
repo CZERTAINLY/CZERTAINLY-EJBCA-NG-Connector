@@ -77,7 +77,7 @@ public class DiscoveryServiceImpl implements DiscoveryService {
             meta.put("reason", e.getMessage());
             history.setMeta(MetaDefinitions.serialize(meta));
             discoveryHistoryService.setHistory(history);
-            throw e;
+            logger.error(e.getMessage());
         }
     }
 
@@ -108,7 +108,7 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         discoveryHistoryService.deleteHistory(discoveryHistory);
     }
 
-    private void discoverCertificatesInternal(DiscoveryRequestDto request, DiscoveryHistory history) throws NotFoundException {
+    private void discoverCertificatesInternal(DiscoveryRequestDto request, DiscoveryHistory history) throws Exception {
         logger.info("Discovery initiated for the request with name {}", request.getName());
         Map<String, Object> meta = new LinkedHashMap<>();
         int certificatesFound = 0;
