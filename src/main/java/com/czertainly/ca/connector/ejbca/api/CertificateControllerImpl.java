@@ -1,5 +1,6 @@
 package com.czertainly.ca.connector.ejbca.api;
 
+import com.czertainly.api.exception.CertificateOperationException;
 import com.czertainly.api.interfaces.connector.v2.CertificateController;
 import com.czertainly.api.model.common.attribute.AttributeDefinition;
 import com.czertainly.api.model.common.attribute.AttributeType;
@@ -8,6 +9,7 @@ import com.czertainly.api.model.connector.v2.CertRevocationDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.api.model.connector.v2.CertificateRenewRequestDto;
 import com.czertainly.api.model.connector.v2.CertificateSignRequestDto;
+import com.czertainly.ca.connector.ejbca.EjbcaException;
 import com.czertainly.ca.connector.ejbca.service.CertificateEjbcaService;
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.exception.NotFoundException;
@@ -91,20 +93,20 @@ public class CertificateControllerImpl implements CertificateController {
     }
 
     @Override
-    public CertificateDataResponseDto issueCertificate(String uuid, CertificateSignRequestDto request) {
+    public CertificateDataResponseDto issueCertificate(String uuid, CertificateSignRequestDto request) throws CertificateOperationException {
         try {
             return certificateEjbcaService.issueCertificate(uuid, request);
         } catch (Exception e) {
-            throw new IllegalStateException(e.getMessage());
+            throw new CertificateOperationException(e.getMessage());
         }
     }
 
     @Override
-    public CertificateDataResponseDto renewCertificate(String uuid, CertificateRenewRequestDto request) {
+    public CertificateDataResponseDto renewCertificate(String uuid, CertificateRenewRequestDto request) throws CertificateOperationException {
         try {
             return certificateEjbcaService.renewCertificate(uuid, request);
         } catch (Exception e) {
-            throw new IllegalStateException(e.getMessage());
+            throw new CertificateOperationException(e.getMessage());
         }
     }
 

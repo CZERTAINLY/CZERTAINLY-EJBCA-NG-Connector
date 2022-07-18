@@ -5,32 +5,24 @@ import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.model.common.NameAndIdDto;
 import com.czertainly.api.model.common.attribute.RequestAttributeDto;
 import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
-import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
+import com.czertainly.ca.connector.ejbca.EjbcaException;
 import com.czertainly.ca.connector.ejbca.api.CertificateControllerImpl;
-import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
-import com.czertainly.ca.connector.ejbca.dto.ejbca.request.Pagination;
-import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificateSortRestRequest;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificatesRestRequestV2;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.response.SearchCertificatesRestResponseV2;
-import com.czertainly.ca.connector.ejbca.rest.EjbcaRestApiClient;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
 import com.czertainly.ca.connector.ejbca.util.EjbcaUtils;
 import com.czertainly.ca.connector.ejbca.util.EjbcaVersion;
 import com.czertainly.ca.connector.ejbca.ws.*;
 import com.czertainly.core.util.AttributeDefinitionUtils;
-import io.netty.handler.ssl.SslContext;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -53,7 +45,7 @@ public class EjbcaServiceImpl implements EjbcaService {
     private AuthorityInstanceService authorityInstanceService;
 
     @Override
-    public void createEndEntity(String authorityUuid, String username, String password, String subjectDn, List<RequestAttributeDto> raProfileAttributes, List<RequestAttributeDto> issueAttributes) throws NotFoundException, AlreadyExistException {
+    public void createEndEntity(String authorityUuid, String username, String password, String subjectDn, List<RequestAttributeDto> raProfileAttributes, List<RequestAttributeDto> issueAttributes) throws NotFoundException, AlreadyExistException, EjbcaException {
         EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityUuid);
 
         if (getUser(ejbcaWS, username) != null) {
@@ -72,6 +64,8 @@ public class EjbcaServiceImpl implements EjbcaService {
             throw new AccessDeniedException("Authorization denied on EJBCA", e);
         } catch (CADoesntExistsException_Exception e) {
             throw new NotFoundException("CA", user.getCaName());
+        } catch (UserDoesntFullfillEndEntityProfile_Exception e) {
+            throw new EjbcaException(e.getMessage().split(": ")[1]);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
