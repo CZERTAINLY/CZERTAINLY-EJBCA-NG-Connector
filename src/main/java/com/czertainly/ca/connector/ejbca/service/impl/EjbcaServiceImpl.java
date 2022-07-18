@@ -22,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.UnsupportedMediaTypeException;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.nio.charset.StandardCharsets;
@@ -167,16 +168,21 @@ public class EjbcaServiceImpl implements EjbcaService {
     }
 
     @Override
-    public SearchCertificatesRestResponseV2 searchCertificates(String authorityInstanceUuid, String restUrl, SearchCertificatesRestRequestV2 request) throws NotFoundException {
+    public SearchCertificatesRestResponseV2 searchCertificates(String authorityInstanceUuid, String restUrl, SearchCertificatesRestRequestV2 request) throws Exception {
        WebClient ejbcaWC = authorityInstanceService.getRestApiConnection(authorityInstanceUuid);
-
-        return ejbcaWC.post()
-                .uri(restUrl + "/v2/certificate/search")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(request)
-                .retrieve()
-                .bodyToMono(SearchCertificatesRestResponseV2.class)
-                .block();
+        try {
+            return ejbcaWC.post()
+                    .uri(restUrl + "/v2/certificate/search")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .bodyValue(request)
+                    .retrieve()
+                    .bodyToMono(SearchCertificatesRestResponseV2.class)
+                    .block();
+        } catch (UnsupportedMediaTypeException e){
+            throw new Exception("Failed to communicate to EJBCA using REST API");
+        } catch (Exception e){
+            throw new Exception(e.getMessage());
+        }
     }
 
     @Override
