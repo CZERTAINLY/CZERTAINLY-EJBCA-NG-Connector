@@ -7,7 +7,7 @@ EJBCA NG `Connector` is the implementation of the following `Function Groups` an
 | Function Group | Kind |
 | --- | --- |
 | `Authority Provider` | `EJBCA` |
-| `Discovery Provider` | `EJBCA`, `EJBCA_SCHEDULED` |
+| `Discovery Provider` | `EJBCA`, `EJBCA_SCHEDULE` |
 
 EJBCA NG `Connector` is the implementation of certificate management for EJBCA that is compatible with the v2 client operations interafce. The `Connector` is developed to work with SOAP Web Services calls.
 
@@ -16,12 +16,12 @@ EJBCA NG `Connector` is the implementation of certificate management for EJBCA t
 EJBCA NG `Connector` allows you to perform the following operations:
 
 `Authority Provider`
-- Issue a certificate
-- Renew a certificate
-- Revoke a Certificate
+- Issue certificate
+- Renew certificate
+- Revoke certificate
 
 `Discovery Provider`
-- Discover Certificates
+- Discover certificates
 
 ## Database requirements
 
@@ -40,8 +40,8 @@ To know more about the `Core`, refer to [CZERTAINLY Core](https://github.com/3Ke
 The `Certificate` discovery in the EJBCA NG `Connector` works with the V2 `Certificate` Search API from EJBCA. Older versions of EJBCA that do not support V2 Search API are not supported.
 
 There are two types of `Discovery`:
-- EJBCA
-- EJBCA_SCHEDULED
+- `EJBCA`
+- `EJBCA_SCHEDULE`
 
 ### `RA Profile` attributes
 
@@ -74,11 +74,9 @@ For discovering `Certificates` from the EJBCA, the following attributes can be u
 - End Entity Profile
 - Date after which the certificates were issued
 
-
-
 ## Interfaces
 
-EJBCA NG `Connector` implements `v2 Authority Provider` and `discovery provider` interfaces. To learn more about the interfaces and end points, refer to the [CZERTAINLY Interfaces](https://github.com/3KeyCompany/CZERTAINLY-Interfaces).
+EJBCA NG `Connector` implements `v2 Authority Provider` and `Discovery Provider` interfaces. To learn more about the interfaces and end points, refer to the [CZERTAINLY Interfaces](https://github.com/3KeyCompany/CZERTAINLY-Interfaces).
 
 For more information, please refer to the [CZERTAINLY documentation](https://docs.czertainly.com).
 
