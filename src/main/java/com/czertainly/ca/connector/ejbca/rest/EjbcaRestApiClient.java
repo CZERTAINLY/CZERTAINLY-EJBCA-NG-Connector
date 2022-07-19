@@ -1,6 +1,7 @@
 package com.czertainly.ca.connector.ejbca.rest;
 
 import com.czertainly.api.clients.BaseApiClient;
+import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.model.common.attribute.AttributeDefinition;
 import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
@@ -143,6 +144,8 @@ public abstract class EjbcaRestApiClient {
         } catch (MalformedURLException e) {
             logger.error(e.getMessage());
         }
+
+        if(wsUrl == null) throw new ValidationException("Invalid or malformed authority instance URL. Authority instance UUID: " + instance.getUuid());
 
         return "https://" + wsUrl.getHost() + ":" + wsUrl.getPort() + "/ejbca/ejbca-rest-api/v2/certificate";
     }

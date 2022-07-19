@@ -296,6 +296,8 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
             logger.error(e.getMessage());
         }
 
+        if(wsUrl == null) throw new ValidationException("Invalid or malformed authority instance URL. Authority instance UUID: " + authorityInstanceUuid);
+
         return "https://" + wsUrl.getHost() + (wsUrl.getPort() != -1 ? ":" + wsUrl.getPort() : "") + "/ejbca/ejbca-rest-api";
     }
 
