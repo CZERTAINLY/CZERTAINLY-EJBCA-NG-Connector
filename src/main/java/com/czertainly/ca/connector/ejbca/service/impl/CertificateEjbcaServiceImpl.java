@@ -1,7 +1,7 @@
 package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.exception.NotFoundException;
-import com.czertainly.api.model.common.RequestAttributeDto;
+import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
 import com.czertainly.api.model.connector.v2.CertRevocationDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.api.model.connector.v2.CertificateRenewRequestDto;
@@ -9,12 +9,12 @@ import com.czertainly.api.model.connector.v2.CertificateSignRequestDto;
 import com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl;
 import com.czertainly.ca.connector.ejbca.api.CertificateControllerImpl;
 import com.czertainly.ca.connector.ejbca.enums.UsernameGenMethod;
-import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.CertificateEjbcaService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
 import com.czertainly.ca.connector.ejbca.util.CertificateUtil;
 import com.czertainly.ca.connector.ejbca.util.CsrUtil;
 import com.czertainly.ca.connector.ejbca.util.MetaDefinitions;
+import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x500.RDN;
@@ -32,7 +32,6 @@ import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -48,14 +47,18 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
     public static final String META_EXTENSION = "extension";
 
     @Autowired
+    public void setEjbcaService(EjbcaService ejbcaService) {
+        this.ejbcaService = ejbcaService;
+    }
+
     private EjbcaService ejbcaService;
 
     @Override
     public CertificateDataResponseDto issueCertificate(String uuid, CertificateSignRequestDto request) throws Exception {
         // generate username based on the request
-        String usernameGenMethod = (String) getAttributeValue(request.getRaProfileAttributes(), AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD);
-        String usernamePrefix = (String) getAttributeValue(request.getRaProfileAttributes(), AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX);
-        String usernamePostfix = (String) getAttributeValue(request.getRaProfileAttributes(), AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX);
+        String usernameGenMethod = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD, request.getRaProfileAttributes(), BaseAttributeContent.class);
+        String usernamePrefix = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX, request.getRaProfileAttributes(), BaseAttributeContent.class);
+        String usernamePostfix = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX, request.getRaProfileAttributes(), BaseAttributeContent.class);
 
         JcaPKCS10CertificationRequest csr = parseCsrToJcaObject(request.getPkcs10());
 
@@ -70,9 +73,9 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
 
         Map<String, Object> meta = new LinkedHashMap<>();
         meta.put(META_EJBCA_USERNAME, username);
-        meta.put(META_EMAIL, getAttributeValue(request.getAttributes(), CertificateControllerImpl.ATTRIBUTE_EMAIL));
-        meta.put(META_SAN, getAttributeValue(request.getAttributes(), CertificateControllerImpl.ATTRIBUTE_SAN));
-        meta.put(META_EXTENSION, getAttributeValue(request.getAttributes(), CertificateControllerImpl.ATTRIBUTE_EXTENSION));
+        meta.put(META_EMAIL, AttributeDefinitionUtils.getAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EMAIL, request.getRaProfileAttributes(), BaseAttributeContent.class));
+        meta.put(META_SAN, AttributeDefinitionUtils.getAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_SAN, request.getRaProfileAttributes(), BaseAttributeContent.class));
+        meta.put(META_EXTENSION, AttributeDefinitionUtils.getAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EXTENSION, request.getRaProfileAttributes(), BaseAttributeContent.class));
 
         certificate.setMeta(MetaDefinitions.serialize(meta));
 
@@ -91,9 +94,9 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
             username = (String) metadata.get(META_EJBCA_USERNAME);
         }
         if (StringUtils.isBlank(username)) {
-            String usernameGenMethod = (String) getAttributeValue(request.getRaProfileAttributes(), AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD);
-            String usernamePrefix = (String) getAttributeValue(request.getRaProfileAttributes(), AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX);
-            String usernamePostfix = (String) getAttributeValue(request.getRaProfileAttributes(), AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX);
+            String usernameGenMethod = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD, request.getRaProfileAttributes(), BaseAttributeContent.class);
+            String usernamePrefix = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX, request.getRaProfileAttributes(), BaseAttributeContent.class);
+            String usernamePostfix = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX, request.getRaProfileAttributes(), BaseAttributeContent.class);
             username = generateUsername(usernameGenMethod, usernamePrefix, usernamePostfix, csr);
         }
 
@@ -133,7 +136,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
 
     private String generateUsername(String usernameGenMethod, String usernamePrefix, String usernamePostfix, JcaPKCS10CertificationRequest csr) throws Exception {
         // the csr comes Base64 encoded
-        String username = null;
+        String username;
         if (usernameGenMethod.equals(UsernameGenMethod.RANDOM.name())) {
             SecureRandom random = new SecureRandom();
             byte[] r = new byte[8];
@@ -149,8 +152,13 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
             logger.debug(message);
             throw new Exception(message);
         }
-        if (username != null && !username.isEmpty()) {
-            username = usernamePrefix + username + usernamePostfix;
+        if (StringUtils.isNotBlank(username)) {
+            if (StringUtils.isNotBlank(usernamePrefix)) {
+                username = usernamePrefix + username;
+            }
+            if (StringUtils.isNotBlank(usernamePostfix)) {
+                username = username + usernamePostfix;
+            }
         } else {
             String message = "Username is null or empty, username was not properly generated";
             logger.debug(message);
@@ -160,7 +168,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
     }
 
     @Override
-    public void revokeCertificate(String uuid, CertRevocationDto request) throws NotFoundException, AccessDeniedException {
+    public void revokeCertificate(String uuid, CertRevocationDto request) throws AccessDeniedException {
         try {
             X509Certificate certificate = CertificateUtil.parseCertificate(request.getCertificate());
             String issuerDn = CertificateUtil.getIssuerDnFromX509Certificate(certificate);
@@ -170,15 +178,6 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    private static Object getAttributeValue(List<RequestAttributeDto> attributes, String attributeName) {
-        for(RequestAttributeDto attribute: attributes) {
-            if (attribute.getName().equals(attributeName)) {
-                return attribute.getValue();
-            }
-        }
-        return null;
     }
 
     private String getX500Field(String asn1ObjectIdentifier, X500Name x500Name) {

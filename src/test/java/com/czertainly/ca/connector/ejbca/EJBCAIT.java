@@ -1,11 +1,12 @@
 package com.czertainly.ca.connector.ejbca;
 
 import com.czertainly.api.exception.NotFoundException;
-import com.czertainly.api.model.common.AttributeDefinition;
+import com.czertainly.api.model.common.attribute.AttributeDefinition;
 import com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
+import com.czertainly.ca.connector.ejbca.util.EjbcaVersion;
 import com.czertainly.ca.connector.ejbca.ws.EjbcaWS;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,5 +81,16 @@ public class EJBCAIT {
         Assertions.assertEquals(8, attrs.size());
 //        boolean result = raProfileAttributesController.validateAttributes(caInstance.getId(), attrs);
 //        Assertions.assertTrue(result);
+    }
+
+    @Test
+    public void testGetEjbcaVersion() throws NotFoundException {
+        EjbcaWS port = authorityInstanceService.getConnection(authorityInstance.getUuid());
+        String ejbcaVersion = port.getEjbcaVersion();
+
+        EjbcaVersion ejbcaVer = new EjbcaVersion(ejbcaVersion);
+
+        Assertions.assertNotNull(ejbcaVersion);
+        Assertions.assertNotNull(ejbcaVer.getVersion());
     }
 }
