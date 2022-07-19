@@ -82,12 +82,12 @@ For more information, please refer to the [CZERTAINLY documentation](https://doc
 
 ## Docker container
 
-EJBCA NG `Connector` is provided as a Docker container. Use the `3keycompany/czertainly-ejbca-ng-connector:tagname` to pull the required image from the repository. It can be configured using the following environment variables:
+EJBCA NG `Connector` is provided as a Docker container. Use the `docker pull harbor.3key.company/czertainly/czertainly-ejbca-ng-connector:tagname` to pull the required image from the repository. It can be configured using the following environment variables:
 
-| Variable | Description | Required | Default value |
-| --- | --- | --- | --- |
-| `JDBC_URL` | JDBC URL for database access | Yes | N/A |
-| `JDBC_USERNAME` | Username to access the database | Yes | N/A |
-| `JDBC_PASSWORD` | Password to access the database | Yes | N/A |
-| `DB_SCHEMA` | Database schema to use | No | ejbca |
-| `PORT` | Port where the service is exposed | No | 8082 |
+| Variable        | Description                       | Required | Default value |
+|-----------------|-----------------------------------|----------|---------------|
+| `JDBC_URL`      | JDBC URL for database access      | Yes      | N/A           |
+| `JDBC_USERNAME` | Username to access the database   | Yes      | N/A           |
+| `JDBC_PASSWORD` | Password to access the database   | Yes      | N/A           |
+| `DB_SCHEMA`     | Database schema to use            | No       | ejbca         |
+| `PORT`          | Port where the service is exposed | No       | 8082          |
