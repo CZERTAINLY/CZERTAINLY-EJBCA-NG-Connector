@@ -91,3 +91,19 @@ EJBCA NG `Connector` is provided as a Docker container. Use the `docker pull har
 | `JDBC_PASSWORD` | Password to access the database   | Yes      | N/A           |
 | `DB_SCHEMA`     | Database schema to use            | No       | ejbca         |
 | `PORT`          | Port where the service is exposed | No       | 8082          |
+
+### Proxy settings
+
+You may need to configure proxy to allow communication with external systems.
+To enable proxy, use the following environment variables:
+
+| Variable      | Description                                                                                                                                                | Required | Default value |
+|---------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------------|
+| `HTTP_PROXY`  | The proxy URL to use for http connections. Format: `<protocol>://<proxy_host>:<proxy_port>` or `<protocol>://<user>:<password>@<proxy_host>:<proxy_port>`  | No       | N/A           |
+| `HTTPS_PROXY` | The proxy URL to use for https connections. Format: `<protocol>://<proxy_host>:<proxy_port>` or `<protocol>://<user>:<password>@<proxy_host>:<proxy_port>` | No       | N/A           |
+| `NO_PROXY`    | A comma-separated list of host names that shouldn't go through any proxy                                                                                   | No       | N/A           |
+
+Example values:
+- `HTTP_PROXY=http://user:password@proxy.example.com:3128`
+- `HTTPS_PROXY=http://user:password@proxy.example.com:3128`
+- `NO_PROXY=localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,cattle-system.svc,.svc,.cluster.local,my-domain.local`
