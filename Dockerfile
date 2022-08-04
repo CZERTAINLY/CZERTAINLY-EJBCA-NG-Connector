@@ -6,10 +6,15 @@ COPY settings.xml /root/.m2/settings.xml
 ARG SERVER_USERNAME
 ARG SERVER_PASSWORD
 RUN mvn -f /home/app/pom.xml clean package
+COPY docker /home/app/docker
 
 # Package stage
 #FROM openjdk:11-jdk-slim
 FROM adoptopenjdk/openjdk11:alpine-jre
-#ARG JAR_FILE=target/*.jar
-COPY --from=build /home/app/target/*.jar app.jar
-ENTRYPOINT ["java","-jar","/app.jar"]
+
+COPY --from=build /home/app/docker /
+COPY --from=build /home/app/target/*.jar /opt/czertainly/app.jar
+
+WORKDIR /opt/czertainly
+
+ENTRYPOINT ["/opt/czertainly/entry.sh"]

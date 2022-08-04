@@ -107,3 +107,9 @@ Example values:
 - `HTTP_PROXY=http://user:password@proxy.example.com:3128`
 - `HTTPS_PROXY=http://user:password@proxy.example.com:3128`
 - `NO_PROXY=localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,cattle-system.svc,.svc,.cluster.local,my-domain.local`
+
+### Additional trusted certificates
+
+You can inject additional trusted certificates into the container, for example, when your EJBCA is using your internally trusted certificates. To trust additional certificates, you need to map a single file with PEM certificates that should be trusted into `/opt/czertainly/trusted-certificates.pem`.
+
+No worries, you can always change the list of trusted certificates in the future.
