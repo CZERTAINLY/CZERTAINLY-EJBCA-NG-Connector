@@ -1,6 +1,6 @@
 # CZERTAINLY EJBCA NG Connector
 
-> This repository is part of the commercial open-source project CZERTAINLY, but the connector is available under subscription. You can find more information about the project at [CZERTAINLY](https://github.com/3KeyCompany/CZERTAINLY) repository, including the contribution guide.
+> This repository is part of the commercial open-source project CZERTAINLY. You can find more information about the project at [CZERTAINLY](https://github.com/3KeyCompany/CZERTAINLY) repository, including the contribution guide.
 
 EJBCA NG `Connector` is the implementation of the following `Function Groups` and `Kinds`:
 
@@ -9,7 +9,7 @@ EJBCA NG `Connector` is the implementation of the following `Function Groups` an
 | `Authority Provider` | `EJBCA` |
 | `Discovery Provider` | `EJBCA`, `EJBCA_SCHEDULE` |
 
-EJBCA NG `Connector` is the implementation of certificate management for EJBCA that is compatible with the v2 client operations interafce. The `Connector` is developed to work with SOAP Web Services calls.
+EJBCA NG `Connector` is the implementation of certificate management for EJBCA that is compatible with the v2 client operations interface. The `Connector` is developed to work with SOAP Web Services calls.
 
 > It is expected that the REST API calls will be implemented as option in the future release, because of some limitations of the EJBCA Web Service, for example limiting the number of end entities and certificates, that can be fetched.
 
