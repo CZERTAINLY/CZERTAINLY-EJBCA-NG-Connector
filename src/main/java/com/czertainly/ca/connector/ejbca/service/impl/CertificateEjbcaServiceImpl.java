@@ -2,6 +2,7 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
+import com.czertainly.api.model.common.attribute.content.StringAttributeContent;
 import com.czertainly.api.model.connector.v2.CertRevocationDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.api.model.connector.v2.CertificateRenewRequestDto;
@@ -56,9 +57,9 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
     @Override
     public CertificateDataResponseDto issueCertificate(String uuid, CertificateSignRequestDto request) throws Exception {
         // generate username based on the request
-        String usernameGenMethod = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD, request.getRaProfileAttributes(), BaseAttributeContent.class);
-        String usernamePrefix = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX, request.getRaProfileAttributes(), BaseAttributeContent.class);
-        String usernamePostfix = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX, request.getRaProfileAttributes(), BaseAttributeContent.class);
+        String usernameGenMethod = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
+        String usernamePrefix = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
+        String usernamePostfix = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
 
         JcaPKCS10CertificationRequest csr = parseCsrToJcaObject(request.getPkcs10());
 
@@ -94,9 +95,9 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
             username = (String) metadata.get(META_EJBCA_USERNAME);
         }
         if (StringUtils.isBlank(username)) {
-            String usernameGenMethod = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD, request.getRaProfileAttributes(), BaseAttributeContent.class);
-            String usernamePrefix = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX, request.getRaProfileAttributes(), BaseAttributeContent.class);
-            String usernamePostfix = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX, request.getRaProfileAttributes(), BaseAttributeContent.class);
+            String usernameGenMethod = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
+            String usernamePrefix = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
+            String usernamePostfix = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
             username = generateUsername(usernameGenMethod, usernamePrefix, usernamePostfix, csr);
         }
 

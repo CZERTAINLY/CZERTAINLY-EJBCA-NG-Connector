@@ -1,7 +1,7 @@
 package com.czertainly.ca.connector.ejbca;
 
 import com.czertainly.api.exception.NotFoundException;
-import com.czertainly.api.model.common.attribute.AttributeDefinition;
+import com.czertainly.api.model.common.attribute.BaseAttribute;
 import com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
@@ -76,7 +76,7 @@ public class EJBCAIT {
 
     @Test
     public void testGetRAProfileAttributes() throws NotFoundException {
-        List<AttributeDefinition> attrs = caInstanceController.listRAProfileAttributes(authorityInstance.getUuid());
+        List<BaseAttribute> attrs = caInstanceController.listRAProfileAttributes(authorityInstance.getUuid());
         Assertions.assertNotNull(attrs);
         Assertions.assertEquals(8, attrs.size());
 //        boolean result = raProfileAttributesController.validateAttributes(caInstance.getId(), attrs);

@@ -2,8 +2,10 @@ package com.czertainly.ca.connector.ejbca.rest;
 
 import com.czertainly.api.clients.BaseApiClient;
 import com.czertainly.api.exception.ValidationException;
-import com.czertainly.api.model.common.attribute.AttributeDefinition;
-import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
+import com.czertainly.api.model.common.attribute.BaseAttribute;
+import com.czertainly.api.model.common.attribute.content.FileAttributeContent;
+import com.czertainly.api.model.common.attribute.content.SecretAttributeContent;
+import com.czertainly.api.model.common.attribute.content.StringAttributeContent;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.response.ExceptionErrorRestResponse;
 import com.czertainly.core.util.AttributeDefinitionUtils;
@@ -22,7 +24,10 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 
-import javax.net.ssl.*;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Base64;
@@ -30,8 +35,6 @@ import java.util.List;
 import java.util.function.Function;
 
 public abstract class EjbcaRestApiClient {
-    private static final Logger logger = LoggerFactory.getLogger(BaseApiClient.class);
-
     // Certificate attribute names
     public static final String ATTRIBUTE_KEYSTORE_TYPE = "keyStoreType";
     public static final String ATTRIBUTE_KEYSTORE = "keyStore";
@@ -39,34 +42,23 @@ public abstract class EjbcaRestApiClient {
     public static final String ATTRIBUTE_TRUSTSTORE_TYPE = "trustStoreType";
     public static final String ATTRIBUTE_TRUSTSTORE = "trustStore";
     public static final String ATTRIBUTE_TRUSTSTORE_PASSWORD = "trustStorePassword";
-
+    private static final Logger logger = LoggerFactory.getLogger(BaseApiClient.class);
+    private static final ParameterizedTypeReference<List<String>> ERROR_LIST_TYPE_REF = new ParameterizedTypeReference<>() {
+    };
     protected WebClient webClient;
 
-    public WebClient.RequestBodyUriSpec prepareRequest(HttpMethod method, List<AttributeDefinition> authAttributes) {
-
-        WebClient.RequestBodySpec request;
-
-        SslContext sslContext = createSslContext(authAttributes);
-        HttpClient httpClient = HttpClient.create().secure(t -> t.sslContext(sslContext));
-        webClient.mutate().clientConnector(new ReactorClientHttpConnector(httpClient)).build();
-
-        request = webClient.method(method);
-
-        return (WebClient.RequestBodyUriSpec) request;
-    }
-
-    public static SslContext createSslContext(List<AttributeDefinition> attributes) {
+    public static SslContext createSslContext(List<BaseAttribute> attributes) {
         try {
             SslContextBuilder sslContextBuilder = SslContextBuilder.forClient();
 
             KeyManager km = null;
-            String keyStoreData = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEYSTORE, attributes, BaseAttributeContent.class);
-            if (keyStoreData != null && !keyStoreData.isEmpty()) {
+            FileAttributeContent keyStoreData = AttributeDefinitionUtils.getSingleItemAttributeContentValue(ATTRIBUTE_KEYSTORE, attributes, FileAttributeContent.class);
+            if (keyStoreData != null && keyStoreData.getData() != null && keyStoreData.getData().getContent() != null && !keyStoreData.getData().getContent().isEmpty()) {
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()); //"SunX509"
 
-                String keyStoreType = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEYSTORE_TYPE, attributes, BaseAttributeContent.class);
-                String keyStorePassword = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEYSTORE_PASSWORD, attributes, BaseAttributeContent.class);
-                byte[] keyStoreBytes = Base64.getDecoder().decode(keyStoreData);
+                String keyStoreType = AttributeDefinitionUtils.getSingleItemAttributeContentValue(ATTRIBUTE_KEYSTORE_TYPE, attributes, StringAttributeContent.class).getData();
+                String keyStorePassword = AttributeDefinitionUtils.getSingleItemAttributeContentValue(ATTRIBUTE_KEYSTORE_PASSWORD, attributes, SecretAttributeContent.class).getData().getSecret();
+                byte[] keyStoreBytes = Base64.getDecoder().decode(keyStoreData.getData().getContent());
 
                 kmf.init(KeyStoreUtils.bytes2KeyStore(keyStoreBytes, keyStorePassword, keyStoreType), keyStorePassword.toCharArray());
                 km = kmf.getKeyManagers()[0];
@@ -75,13 +67,13 @@ public abstract class EjbcaRestApiClient {
             sslContextBuilder.keyManager(km);
 
             TrustManager tm;
-            String trustStoreData = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_TRUSTSTORE, attributes, BaseAttributeContent.class);
-            if (trustStoreData != null && !trustStoreData.isEmpty()) {
+            FileAttributeContent trustStoreData = AttributeDefinitionUtils.getSingleItemAttributeContentValue(ATTRIBUTE_TRUSTSTORE, attributes, FileAttributeContent.class);
+            if (trustStoreData != null && trustStoreData.getData() != null && trustStoreData.getData().getContent() != null && !trustStoreData.getData().getContent().isEmpty()) {
                 TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()); //"SunX509"
 
-                String trustStoreType = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_TRUSTSTORE_TYPE, attributes, BaseAttributeContent.class);
-                String trustStorePassword = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_TRUSTSTORE_PASSWORD, attributes, BaseAttributeContent.class);
-                byte[] trustStoreBytes = Base64.getDecoder().decode(trustStoreData);
+                String trustStoreType = AttributeDefinitionUtils.getSingleItemAttributeContentValue(ATTRIBUTE_TRUSTSTORE_TYPE, attributes, StringAttributeContent.class).getData();
+                String trustStorePassword = AttributeDefinitionUtils.getSingleItemAttributeContentValue(ATTRIBUTE_TRUSTSTORE_PASSWORD, attributes, SecretAttributeContent.class).getData().getSecret();
+                byte[] trustStoreBytes = Base64.getDecoder().decode(trustStoreData.getData().getContent());
 
                 tmf.init(KeyStoreUtils.bytes2KeyStore(trustStoreBytes, trustStorePassword, trustStoreType));
                 tm = tmf.getTrustManagers()[0];
@@ -95,9 +87,6 @@ public abstract class EjbcaRestApiClient {
             throw new IllegalStateException("Failed to initialize SslContext.", e);
         }
     }
-
-    private static final ParameterizedTypeReference<List<String>> ERROR_LIST_TYPE_REF = new ParameterizedTypeReference<>() {
-    };
 
     public static WebClient prepareWebClient() {
         return WebClient.builder()
@@ -124,15 +113,28 @@ public abstract class EjbcaRestApiClient {
         return null;
     }
 
+    public WebClient.RequestBodyUriSpec prepareRequest(HttpMethod method, List<BaseAttribute> authAttributes) {
+
+        WebClient.RequestBodySpec request;
+
+        SslContext sslContext = createSslContext(authAttributes);
+        HttpClient httpClient = HttpClient.create().secure(t -> t.sslContext(sslContext));
+        webClient.mutate().clientConnector(new ReactorClientHttpConnector(httpClient)).build();
+
+        request = webClient.method(method);
+
+        return (WebClient.RequestBodyUriSpec) request;
+    }
+
     public void searchCertificates(AuthorityInstance instance) {
-        List<AttributeDefinition> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData());
+        List<BaseAttribute> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData(), BaseAttribute.class);
         WebClient.RequestBodyUriSpec request = prepareRequest(HttpMethod.POST, attributes);
 
         processRequest(r -> r
-                .uri(getRestApiUrl(instance))
-                .retrieve()
-                .toEntity(Void.class)
-                .block().getBody(),
+                        .uri(getRestApiUrl(instance))
+                        .retrieve()
+                        .toEntity(Void.class)
+                        .block().getBody(),
                 request);
 
     }
@@ -145,7 +147,8 @@ public abstract class EjbcaRestApiClient {
             logger.error(e.getMessage());
         }
 
-        if(wsUrl == null) throw new ValidationException("Invalid or malformed authority instance URL. Authority instance UUID: " + instance.getUuid());
+        if (wsUrl == null)
+            throw new ValidationException("Invalid or malformed authority instance URL. Authority instance UUID: " + instance.getUuid());
 
         return "https://" + wsUrl.getHost() + ":" + wsUrl.getPort() + "/ejbca/ejbca-rest-api/v2/certificate";
     }

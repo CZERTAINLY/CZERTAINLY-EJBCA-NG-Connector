@@ -1,7 +1,12 @@
 package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.interfaces.connector.AttributesController;
+import com.czertainly.api.model.client.attribute.RequestAttributeDto;
 import com.czertainly.api.model.common.attribute.*;
+import com.czertainly.api.model.common.attribute.callback.AttributeCallback;
+import com.czertainly.api.model.common.attribute.callback.AttributeCallbackMapping;
+import com.czertainly.api.model.common.attribute.callback.AttributeValueTarget;
+import com.czertainly.api.model.common.attribute.content.AttributeContentType;
 import com.czertainly.ca.connector.ejbca.service.AttributeService;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.slf4j.Logger;
@@ -20,35 +25,41 @@ public class AttributeServiceImpl implements AttributeService {
 	private static final Logger logger = LoggerFactory.getLogger(AttributesController.class);
 
 	@Override
-	public List<AttributeDefinition> getAttributes(String kind) {
+	public List<BaseAttribute> getAttributes(String kind) {
 		logger.info("Getting the attributes for {}", kind);
-		List<AttributeDefinition> attrs = new ArrayList<>();
+		List<BaseAttribute> attrs = new ArrayList<>();
 
-        AttributeDefinition url = new AttributeDefinition();
+        DataAttribute url = new DataAttribute();
         url.setUuid("87e968ca-9404-4128-8b58-3ab5db2ba06e");
         url.setName("url");
-        url.setLabel("EJBCA WS URL");
         url.setDescription("URL of EJBCA web services");
-        url.setType(AttributeType.STRING);
-        url.setRequired(true);
-        url.setReadOnly(false);
-        url.setVisible(true);
-        url.setList(false);
-        url.setMultiSelect(false);
+        url.setType(AttributeType.DATA);
+        url.setContentType(AttributeContentType.STRING);
+        AttributeProperties urlProperties = new AttributeProperties();
+        urlProperties.setLabel("EJBCA WS URL");
+        urlProperties.setRequired(true);
+        urlProperties.setReadOnly(false);
+        urlProperties.setVisible(true);
+        urlProperties.setList(false);
+        urlProperties.setMulti(false);
+        url.setProperties(urlProperties);
         attrs.add(url);
-        
-        AttributeDefinition credential = new AttributeDefinition();
+
+        DataAttribute credential = new DataAttribute();
         credential.setUuid("9379ca2c-aa51-42c8-8afd-2a2d16c99c57");
         credential.setName("credential");
-        credential.setLabel("Credential");
         credential.setDescription("SoftKeyStore Credential representing EJBCA administrator for the communication");
-        credential.setType(AttributeType.CREDENTIAL);
-        credential.setRequired(true);
-        credential.setReadOnly(false);
-        credential.setVisible(true);
-        credential.setList(true);
-        url.setMultiSelect(false);
-        
+        credential.setType(AttributeType.DATA);
+        credential.setContentType(AttributeContentType.CREDENTIAL);
+        AttributeProperties credentialProperties = new AttributeProperties();
+        credentialProperties.setLabel("Credential");
+        credentialProperties.setRequired(true);
+        credentialProperties.setReadOnly(false);
+        credentialProperties.setVisible(true);
+        credentialProperties.setList(true);
+        credentialProperties.setMulti(false);
+        credential.setProperties(credentialProperties);
+
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
         mappings.add(new AttributeCallbackMapping(
                 "credentialKind",

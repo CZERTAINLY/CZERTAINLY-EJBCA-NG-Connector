@@ -2,11 +2,14 @@ package com.czertainly.ca.connector.ejbca.api;
 
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.interfaces.connector.AttributesController;
-import com.czertainly.api.model.common.attribute.AttributeDefinition;
-import com.czertainly.api.model.common.attribute.RequestAttributeDto;
+import com.czertainly.api.model.client.attribute.RequestAttributeDto;
+import com.czertainly.api.model.common.attribute.BaseAttribute;
 import com.czertainly.ca.connector.ejbca.service.AttributeService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -14,15 +17,15 @@ import java.util.List;
 @RequestMapping("/v1/authorityProvider/{kind}/attributes")
 public class AttributesControllerImpl implements AttributesController {
 
+    private AttributeService attributeService;
+
     @Autowired
     public void setAttributeService(AttributeService attributeService) {
         this.attributeService = attributeService;
     }
 
-    private AttributeService attributeService;
-
     @Override
-    public List<AttributeDefinition> listAttributeDefinitions(@PathVariable String kind) {
+    public List<BaseAttribute> listAttributeDefinitions(@PathVariable String kind) {
         return attributeService.getAttributes(kind);
     }
 

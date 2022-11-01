@@ -1,15 +1,20 @@
 package com.czertainly.ca.connector.ejbca.service.impl;
 
+import com.czertainly.api.exception.AlreadyExistException;
+import com.czertainly.api.exception.NotFoundException;
+import com.czertainly.api.model.client.attribute.ResponseAttributeDto;
 import com.czertainly.api.model.common.NameAndIdDto;
-import com.czertainly.api.model.common.attribute.ResponseAttributeDto;
-import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
-import com.czertainly.api.model.core.authority.*;
-import com.czertainly.ca.connector.ejbca.ws.*;
+import com.czertainly.api.model.common.attribute.content.BooleanAttributeContent;
+import com.czertainly.api.model.core.authority.AddEndEntityRequestDto;
+import com.czertainly.api.model.core.authority.BaseEndEntityRequestDto;
+import com.czertainly.api.model.core.authority.EditEndEntityRequestDto;
+import com.czertainly.api.model.core.authority.EndEntityDto;
+import com.czertainly.api.model.core.authority.EndEntityExtendedInfoDto;
+import com.czertainly.api.model.core.authority.RevocationReason;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.EndEntityEjbcaService;
 import com.czertainly.ca.connector.ejbca.util.EjbcaUtils;
-import com.czertainly.api.exception.AlreadyExistException;
-import com.czertainly.api.exception.NotFoundException;
+import com.czertainly.ca.connector.ejbca.ws.*;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,18 +26,22 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.*;
+import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_CERTIFICATE_PROFILE;
+import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_CERTIFICATION_AUTHORITY;
+import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_END_ENTITY_PROFILE;
+import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_KEY_RECOVERABLE;
+import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_SEND_NOTIFICATIONS;
 
 @Service
 @Transactional
 public class EndEntityEjbcaServiceImpl implements EndEntityEjbcaService {
 
+    private AuthorityInstanceService authorityInstanceService;
+
     @Autowired
     public void setAuthorityInstanceService(AuthorityInstanceService authorityInstanceService) {
         this.authorityInstanceService = authorityInstanceService;
     }
-
-    private AuthorityInstanceService authorityInstanceService;
 
     @Override
     public List<EndEntityDto> listEntities(String uuid, String endEntityProfileName) throws NotFoundException {
@@ -179,21 +188,21 @@ public class EndEntityEjbcaServiceImpl implements EndEntityEjbcaService {
         //String tokenType = AttributeDefinitionUtils.getAttributeValue(ATTRIBUTE_TOKEN_TYPE, raProfileAttrs);
         //user.setTokenType(tokenType);
 
-        NameAndIdDto endEntityProfile = AttributeDefinitionUtils.getJsonAttributeContentData(ATTRIBUTE_END_ENTITY_PROFILE, raProfileAttrs, NameAndIdDto.class);
+        NameAndIdDto endEntityProfile = AttributeDefinitionUtils.getObjectAttributeContentData(ATTRIBUTE_END_ENTITY_PROFILE, raProfileAttrs, NameAndIdDto.class).get(0);
         user.setEndEntityProfileName(endEntityProfile.getName());
 
-        NameAndIdDto certificateProfile = AttributeDefinitionUtils.getJsonAttributeContentData(ATTRIBUTE_CERTIFICATE_PROFILE, raProfileAttrs, NameAndIdDto.class);
+        NameAndIdDto certificateProfile = AttributeDefinitionUtils.getObjectAttributeContentData(ATTRIBUTE_CERTIFICATE_PROFILE, raProfileAttrs, NameAndIdDto.class).get(0);
         user.setCertificateProfileName(certificateProfile.getName());
 
-        NameAndIdDto ca = AttributeDefinitionUtils.getJsonAttributeContentData(ATTRIBUTE_CERTIFICATION_AUTHORITY, raProfileAttrs, NameAndIdDto.class);
+        NameAndIdDto ca = AttributeDefinitionUtils.getObjectAttributeContentData(ATTRIBUTE_CERTIFICATION_AUTHORITY, raProfileAttrs, NameAndIdDto.class).get(0);
         user.setCaName(ca.getName());
 
-        Boolean sendNotifications = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs, BaseAttributeContent.class);
+        Boolean sendNotifications = AttributeDefinitionUtils.getSingleItemAttributeContentValue(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs, BooleanAttributeContent.class).getData();
         if (sendNotifications != null) {
             user.setSendNotification(sendNotifications);
         }
 
-        Boolean keyRecoverable = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEY_RECOVERABLE, raProfileAttrs, BaseAttributeContent.class);
+        Boolean keyRecoverable = AttributeDefinitionUtils.getSingleItemAttributeContentValue(ATTRIBUTE_KEY_RECOVERABLE, raProfileAttrs, BooleanAttributeContent.class).getData();
         if (keyRecoverable != null) {
             user.setKeyRecoverable(keyRecoverable);
         }

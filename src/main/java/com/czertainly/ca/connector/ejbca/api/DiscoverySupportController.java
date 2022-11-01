@@ -6,7 +6,7 @@ import com.czertainly.api.exception.ValidationError;
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.model.common.NameAndIdDto;
 import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
-import com.czertainly.api.model.common.attribute.content.JsonAttributeContent;
+import com.czertainly.api.model.common.attribute.content.ObjectAttributeContent;
 import com.czertainly.ca.connector.ejbca.dto.EjbcaVersionResponseDto;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
@@ -14,7 +14,10 @@ import com.czertainly.ca.connector.ejbca.service.EndEntityProfileEjbcaService;
 import com.czertainly.ca.connector.ejbca.util.EjbcaVersion;
 import com.czertainly.ca.connector.ejbca.util.LocalAttributeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,22 +26,24 @@ import java.util.List;
 @RequestMapping("/v1/discoveryProvider")
 public class DiscoverySupportController {
 
+    private EjbcaService ejbcaService;
+    private EndEntityProfileEjbcaService endEntityProfileEjbcaService;
+    private AuthorityInstanceService authorityInstanceService;
+
     @Autowired
     public void setEjbcaService(EjbcaService ejbcaService) {
         this.ejbcaService = ejbcaService;
     }
+
     @Autowired
     public void setEndEntityProfileEjbcaService(EndEntityProfileEjbcaService endEntityProfileEjbcaService) {
         this.endEntityProfileEjbcaService = endEntityProfileEjbcaService;
     }
+
     @Autowired
     public void setAuthorityInstanceService(AuthorityInstanceService authorityInstanceService) {
         this.authorityInstanceService = authorityInstanceService;
     }
-
-    private EjbcaService ejbcaService;
-    private EndEntityProfileEjbcaService endEntityProfileEjbcaService;
-    private AuthorityInstanceService authorityInstanceService;
 
     @RequestMapping(
             path = "/{ejbcaInstanceName}/ejbcaVersion",
@@ -66,13 +71,13 @@ public class DiscoverySupportController {
             method = RequestMethod.GET,
             produces = "application/json"
     )
-    public List<JsonAttributeContent> listEndEntityProfiles(@PathVariable String ejbcaInstanceUuid) throws NotFoundException {
+    public List<ObjectAttributeContent> listEndEntityProfiles(@PathVariable String ejbcaInstanceUuid) throws NotFoundException {
         checkEjbcaVersion(ejbcaInstanceUuid);
 
         List<NameAndIdDto> endEntityProfiles = endEntityProfileEjbcaService.listEndEntityProfiles(ejbcaInstanceUuid);
-        List<JsonAttributeContent> contentList = new ArrayList<>();
+        List<ObjectAttributeContent> contentList = new ArrayList<>();
         for (NameAndIdDto endEntityProfile : endEntityProfiles) {
-            JsonAttributeContent content = new JsonAttributeContent(endEntityProfile.getName(), endEntityProfile);
+            ObjectAttributeContent content = new ObjectAttributeContent(endEntityProfile.getName(), endEntityProfile);
             contentList.add(content);
         }
         return contentList;
@@ -83,7 +88,7 @@ public class DiscoverySupportController {
             method = RequestMethod.GET,
             produces = "application/json"
     )
-    public List<JsonAttributeContent> listCas(@PathVariable String ejbcaInstanceUuid) throws NotFoundException {
+    public List<ObjectAttributeContent> listCas(@PathVariable String ejbcaInstanceUuid) throws NotFoundException {
         checkEjbcaVersion(ejbcaInstanceUuid);
 
         List<NameAndIdDto> cas = ejbcaService.getAvailableCas(ejbcaInstanceUuid);
@@ -105,10 +110,7 @@ public class DiscoverySupportController {
     private void checkEjbcaVersion(String ejbcaInstanceName) throws NotFoundException {
         EjbcaVersion ejbcaVersion = ejbcaService.getEjbcaVersion(ejbcaInstanceName);
 
-        boolean supported = false;
-        if ((ejbcaVersion.getTechVersion() >= 7 && ejbcaVersion.getMajorVersion() >= 8)) {
-            supported = true;
-        }
+        boolean supported = ejbcaVersion.getTechVersion() >= 7 && ejbcaVersion.getMajorVersion() >= 8;
 
         if (!supported) {
             List<ValidationError> errors = new ArrayList<>();
