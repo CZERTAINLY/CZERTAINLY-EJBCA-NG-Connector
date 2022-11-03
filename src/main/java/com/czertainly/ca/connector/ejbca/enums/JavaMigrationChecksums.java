@@ -5,7 +5,7 @@ package com.czertainly.ca.connector.ejbca.enums;
  */
 public enum JavaMigrationChecksums {
     V202206231700__AttributeChanges(1236550637),
-    V202211031300__AttributeV2Changes(196268843);
+    V202211031300__AttributeV2Changes(535796599);
     private final int checksum;
 
     JavaMigrationChecksums(int checksum) {

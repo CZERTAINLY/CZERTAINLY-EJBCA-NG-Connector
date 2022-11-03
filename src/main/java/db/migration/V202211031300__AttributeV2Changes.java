@@ -25,7 +25,7 @@ public class V202211031300__AttributeV2Changes extends BaseJavaMigration {
 
     @Override
     public Integer getChecksum() {
-        return JavaMigrationChecksums.V202206231700__AttributeChanges.getChecksum();
+        return JavaMigrationChecksums.V202211031300__AttributeV2Changes.getChecksum();
     }
 
     public void migrate(Context context) throws Exception {
