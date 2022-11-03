@@ -1,7 +1,7 @@
 package com.czertainly.ca.connector.ejbca.util;
 
 import com.czertainly.api.model.common.NameAndIdDto;
-import com.czertainly.api.model.common.attribute.content.ObjectAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.ObjectAttributeContent;
 
 import java.util.ArrayList;
 import java.util.List;

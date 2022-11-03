@@ -2,7 +2,7 @@ package com.czertainly.ca.connector.ejbca.api;
 
 import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.model.common.NameAndIdDto;
-import com.czertainly.api.model.common.attribute.content.ObjectAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.ObjectAttributeContent;
 import com.czertainly.ca.connector.ejbca.service.EndEntityProfileEjbcaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;

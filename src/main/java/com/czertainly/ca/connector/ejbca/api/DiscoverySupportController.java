@@ -5,8 +5,8 @@ import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.exception.ValidationError;
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.model.common.NameAndIdDto;
-import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
-import com.czertainly.api.model.common.attribute.content.ObjectAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.BaseAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.ObjectAttributeContent;
 import com.czertainly.ca.connector.ejbca.dto.EjbcaVersionResponseDto;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
@@ -105,6 +105,16 @@ public class DiscoverySupportController {
 
         String url = authorityInstanceService.getRestApiUrl(ejbcaInstanceUuid);
         return new BaseAttributeContent<>(url);
+    }
+
+
+    @RequestMapping(
+            path = "/test",
+            method = RequestMethod.GET,
+            produces = "application/json"
+    )
+    public void test() {
+
     }
 
     private void checkEjbcaVersion(String ejbcaInstanceName) throws NotFoundException {

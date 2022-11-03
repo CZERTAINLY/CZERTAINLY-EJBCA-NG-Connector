@@ -2,10 +2,10 @@ package com.czertainly.ca.connector.ejbca.rest;
 
 import com.czertainly.api.clients.BaseApiClient;
 import com.czertainly.api.exception.ValidationException;
-import com.czertainly.api.model.common.attribute.BaseAttribute;
-import com.czertainly.api.model.common.attribute.content.FileAttributeContent;
-import com.czertainly.api.model.common.attribute.content.SecretAttributeContent;
-import com.czertainly.api.model.common.attribute.content.StringAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
+import com.czertainly.api.model.common.attribute.v2.content.FileAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.SecretAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.response.ExceptionErrorRestResponse;
 import com.czertainly.core.util.AttributeDefinitionUtils;
