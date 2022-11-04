@@ -5,7 +5,7 @@ import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.interfaces.connector.v2.CertificateController;
 import com.czertainly.api.model.client.attribute.RequestAttributeDto;
-import com.czertainly.api.model.common.attribute.v2.AttributeProperties;
+import com.czertainly.api.model.common.attribute.v2.DataAttributeProperties;
 import com.czertainly.api.model.common.attribute.v2.AttributeType;
 import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
 import com.czertainly.api.model.common.attribute.v2.DataAttribute;
@@ -50,13 +50,13 @@ public class CertificateControllerImpl implements CertificateController {
         email.setDescription("End Entity email address");
         email.setType(AttributeType.DATA);
         email.setContentType(AttributeContentType.STRING);
-        AttributeProperties emailProperties = new AttributeProperties();
+        DataAttributeProperties emailProperties = new DataAttributeProperties();
         emailProperties.setLabel(ATTRIBUTE_EMAIL_LABEL);
         emailProperties.setRequired(false);
         emailProperties.setReadOnly(false);
         emailProperties.setVisible(true);
         emailProperties.setList(false);
-        emailProperties.setMulti(false);
+        emailProperties.setMultiSelect(false);
         attrs.add(email);
 
         DataAttribute san = new DataAttribute();
@@ -65,13 +65,13 @@ public class CertificateControllerImpl implements CertificateController {
         san.setDescription("Comma separated Subject Alternative Names");
         san.setType(AttributeType.DATA);
         san.setContentType(AttributeContentType.STRING);
-        AttributeProperties sanProperties = new AttributeProperties();
+        DataAttributeProperties sanProperties = new DataAttributeProperties();
         sanProperties.setLabel(ATTRIBUTE_SAN_LABEL);
         sanProperties.setRequired(false);
         sanProperties.setReadOnly(false);
         sanProperties.setVisible(true);
         sanProperties.setList(false);
-        sanProperties.setMulti(false);
+        sanProperties.setMultiSelect(false);
         attrs.add(san);
 
         DataAttribute extension = new DataAttribute();
@@ -80,13 +80,13 @@ public class CertificateControllerImpl implements CertificateController {
         extension.setDescription("Comma separated Extension Data");
         extension.setType(AttributeType.DATA);
         extension.setContentType(AttributeContentType.STRING);
-        AttributeProperties extensionProperties = new AttributeProperties();
+        DataAttributeProperties extensionProperties = new DataAttributeProperties();
         extensionProperties.setLabel(ATTRIBUTE_EXTENSION_LABEL);
         extensionProperties.setRequired(false);
         extensionProperties.setReadOnly(false);
         extensionProperties.setVisible(true);
         extensionProperties.setList(false);
-        extensionProperties.setMulti(false);
+        extensionProperties.setMultiSelect(false);
         attrs.add(extension);
 
         return attrs;

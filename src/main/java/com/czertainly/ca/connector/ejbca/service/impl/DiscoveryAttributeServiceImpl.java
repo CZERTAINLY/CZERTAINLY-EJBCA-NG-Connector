@@ -3,7 +3,7 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 import com.czertainly.api.exception.ValidationError;
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.model.client.attribute.RequestAttributeDto;
-import com.czertainly.api.model.common.attribute.v2.AttributeProperties;
+import com.czertainly.api.model.common.attribute.v2.DataAttributeProperties;
 import com.czertainly.api.model.common.attribute.v2.AttributeType;
 import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
 import com.czertainly.api.model.common.attribute.v2.DataAttribute;
@@ -112,13 +112,13 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setContentType(AttributeContentType.OBJECT);
         attribute.setDescription("The EJBCA instance where Discovery process should search for Certificates");
         attribute.setType(AttributeType.DATA);
-        AttributeProperties attributeProperties = new AttributeProperties();
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
         attributeProperties.setLabel(ATTRIBUTE_EJBCA_INSTANCE_LABEL);
         attributeProperties.setRequired(true);
         attributeProperties.setReadOnly(false);
         attributeProperties.setVisible(true);
         attributeProperties.setList(true);
-        attributeProperties.setMulti(false);
+        attributeProperties.setMultiSelect(false);
         attribute.setProperties(attributeProperties);
         attribute.setContent(contentList);
 
@@ -132,13 +132,13 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setDescription("Available certification authorities for Discovery");
         attribute.setContentType(AttributeContentType.OBJECT);
         attribute.setType(AttributeType.DATA);
-        AttributeProperties attributeProperties = new AttributeProperties();
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
         attributeProperties.setLabel(ATTRIBUTE_EJBCA_CA_LABEL);
         attributeProperties.setRequired(false);
         attributeProperties.setReadOnly(false);
         attributeProperties.setVisible(true);
         attributeProperties.setList(true);
-        attributeProperties.setMulti(true);
+        attributeProperties.setMultiSelect(true);
         attribute.setContent(List.of());
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
@@ -161,13 +161,13 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setDescription("The End Entity Profile where Discovery process should search for Certificates");
         attribute.setType(AttributeType.DATA);
         attribute.setContentType(AttributeContentType.OBJECT);
-        AttributeProperties attributeProperties = new AttributeProperties();
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
         attributeProperties.setLabel(ATTRIBUTE_END_ENTITY_PROFILE_LABEL);
         attributeProperties.setRequired(false);
         attributeProperties.setReadOnly(false);
         attributeProperties.setVisible(true);
         attributeProperties.setList(true);
-        attributeProperties.setMulti(true);
+        attributeProperties.setMultiSelect(true);
         attribute.setContent(List.of());
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
@@ -196,13 +196,13 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setDescription("Filter certificate status");
         attribute.setType(AttributeType.DATA);
         attribute.setContentType(AttributeContentType.OBJECT);
-        AttributeProperties attributeProperties = new AttributeProperties();
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
         attributeProperties.setLabel(ATTRIBUTE_EJBCA_STATUS_LABEL);
         attributeProperties.setRequired(false);
         attributeProperties.setReadOnly(false);
         attributeProperties.setVisible(true);
         attributeProperties.setList(true);
-        attributeProperties.setMulti(true);
+        attributeProperties.setMultiSelect(true);
         attribute.setContent(statuses);
 
         return attribute;
@@ -215,13 +215,13 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setDescription("Base URL of the EJBCA REST API to be used");
         attribute.setType(AttributeType.DATA);
         attribute.setContentType(AttributeContentType.STRING);
-        AttributeProperties attributeProperties = new AttributeProperties();
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
         attributeProperties.setLabel(ATTRIBUTE_EJBCA_RESTAPI_URL_LABEL);
         attributeProperties.setRequired(true);
         attributeProperties.setReadOnly(false);
         attributeProperties.setVisible(true);
         attributeProperties.setList(false);
-        attributeProperties.setMulti(false);
+        attributeProperties.setMultiSelect(false);
         attribute.setProperties(attributeProperties);
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
@@ -244,13 +244,13 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setDescription("The date after the certificates were issued");
         attribute.setType(AttributeType.DATA);
         attribute.setContentType(AttributeContentType.DATETIME);
-        AttributeProperties attributeProperties = new AttributeProperties();
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
         attributeProperties.setLabel(ATTRIBUTE_EJBCA_ISSUED_AFTER_LABEL);
         attributeProperties.setRequired(false);
         attributeProperties.setReadOnly(false);
         attributeProperties.setVisible(true);
         attributeProperties.setList(false);
-        attributeProperties.setMulti(false);
+        attributeProperties.setMultiSelect(false);
         attribute.setProperties(attributeProperties);
         return attribute;
     }
@@ -262,13 +262,13 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setDescription("Maximum number of days before the certificate was issued, from running the discovery");
         attribute.setType(AttributeType.DATA);
         attribute.setContentType(AttributeContentType.INTEGER);
-        AttributeProperties attributeProperties = new AttributeProperties();
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
         attributeProperties.setLabel(ATTRIBUTE_ISSUED_DAYS_BEFORE_LABEL);
         attributeProperties.setRequired(true);
         attributeProperties.setReadOnly(false);
         attributeProperties.setVisible(true);
         attributeProperties.setList(false);
-        attributeProperties.setMulti(false);
+        attributeProperties.setMultiSelect(false);
         attribute.setProperties(attributeProperties);
         attribute.setContent(List.of(new IntegerAttributeContent(5)));
 

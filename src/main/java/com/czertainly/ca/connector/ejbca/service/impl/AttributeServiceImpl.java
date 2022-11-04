@@ -2,7 +2,7 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.interfaces.connector.AttributesController;
 import com.czertainly.api.model.client.attribute.RequestAttributeDto;
-import com.czertainly.api.model.common.attribute.v2.AttributeProperties;
+import com.czertainly.api.model.common.attribute.v2.DataAttributeProperties;
 import com.czertainly.api.model.common.attribute.v2.AttributeType;
 import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
 import com.czertainly.api.model.common.attribute.v2.DataAttribute;
@@ -38,13 +38,13 @@ public class AttributeServiceImpl implements AttributeService {
         url.setDescription("URL of EJBCA web services");
         url.setType(AttributeType.DATA);
         url.setContentType(AttributeContentType.STRING);
-        AttributeProperties urlProperties = new AttributeProperties();
+        DataAttributeProperties urlProperties = new DataAttributeProperties();
         urlProperties.setLabel("EJBCA WS URL");
         urlProperties.setRequired(true);
         urlProperties.setReadOnly(false);
         urlProperties.setVisible(true);
         urlProperties.setList(false);
-        urlProperties.setMulti(false);
+        urlProperties.setMultiSelect(false);
         url.setProperties(urlProperties);
         attrs.add(url);
 
@@ -54,13 +54,13 @@ public class AttributeServiceImpl implements AttributeService {
         credential.setDescription("SoftKeyStore Credential representing EJBCA administrator for the communication");
         credential.setType(AttributeType.DATA);
         credential.setContentType(AttributeContentType.CREDENTIAL);
-        AttributeProperties credentialProperties = new AttributeProperties();
+        DataAttributeProperties credentialProperties = new DataAttributeProperties();
         credentialProperties.setLabel("Credential");
         credentialProperties.setRequired(true);
         credentialProperties.setReadOnly(false);
         credentialProperties.setVisible(true);
         credentialProperties.setList(true);
-        credentialProperties.setMulti(false);
+        credentialProperties.setMultiSelect(false);
         credential.setProperties(credentialProperties);
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
