@@ -2,8 +2,10 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.model.common.NameAndIdDto;
-import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
-import com.czertainly.api.model.common.attribute.content.DateTimeAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.BaseAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.DateTimeAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.IntegerAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
 import com.czertainly.api.model.connector.discovery.DiscoveryDataRequestDto;
 import com.czertainly.api.model.connector.discovery.DiscoveryProviderDto;
 import com.czertainly.api.model.connector.discovery.DiscoveryRequestDto;
@@ -33,9 +35,15 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.nio.charset.StandardCharsets;
-import java.time.*;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,23 +56,24 @@ public class DiscoveryServiceImpl implements DiscoveryService {
      * This constant represents the number of certificate per page in searching
      */
     private static final int EJBCA_SEARCH_PAGE_SIZE = 1000;
+    private EjbcaService ejbcaService;
+    private CertificateRepository certificateRepository;
+    private DiscoveryHistoryService discoveryHistoryService;
 
     @Autowired
     public void setEjbcaService(EjbcaService ejbcaService) {
         this.ejbcaService = ejbcaService;
     }
+
     @Autowired
     public void setCertificateRepository(CertificateRepository certificateRepository) {
         this.certificateRepository = certificateRepository;
     }
+
     @Autowired
     public void setDiscoveryHistoryService(DiscoveryHistoryService discoveryHistoryService) {
         this.discoveryHistoryService = discoveryHistoryService;
     }
-
-    private EjbcaService ejbcaService;
-    private CertificateRepository certificateRepository;
-    private DiscoveryHistoryService discoveryHistoryService;
 
     @Override
     @Async
@@ -113,18 +122,18 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         Map<String, Object> meta = new LinkedHashMap<>();
         int certificatesFound = 0;
 
-        final AuthorityInstanceNameAndUuidDto instance = AttributeDefinitionUtils.getJsonAttributeContentData(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_INSTANCE, request.getAttributes(), AuthorityInstanceNameAndUuidDto.class);
-        final String restApiUrl = AttributeDefinitionUtils.getAttributeContentValue(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_RESTAPI_URL, request.getAttributes(), BaseAttributeContent.class);
-        final List<NameAndIdDto> cas = AttributeDefinitionUtils.getJsonAttributeContentDataList(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_CA, request.getAttributes(), NameAndIdDto.class);
-        final List<NameAndIdDto> eeProfiles = AttributeDefinitionUtils.getJsonAttributeContentDataList(DiscoveryAttributeServiceImpl.ATTRIBUTE_END_ENTITY_PROFILE, request.getAttributes(), NameAndIdDto.class);
+        final AuthorityInstanceNameAndUuidDto instance = AttributeDefinitionUtils.getObjectAttributeContentData(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_INSTANCE, request.getAttributes(), AuthorityInstanceNameAndUuidDto.class).get(0);
+        final String restApiUrl = AttributeDefinitionUtils.getSingleItemAttributeContentValue(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_RESTAPI_URL, request.getAttributes(), StringAttributeContent.class).getData();
+        final List<NameAndIdDto> cas = AttributeDefinitionUtils.getObjectAttributeContentDataList(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_CA, request.getAttributes(), NameAndIdDto.class);
+        final List<NameAndIdDto> eeProfiles = AttributeDefinitionUtils.getObjectAttributeContentDataList(DiscoveryAttributeServiceImpl.ATTRIBUTE_END_ENTITY_PROFILE, request.getAttributes(), NameAndIdDto.class);
         final List<String> statuses = AttributeDefinitionUtils.getAttributeContentValueList(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_STATUS, request.getAttributes(), BaseAttributeContent.class);
 
         ZonedDateTime issuedAfter = null;
         if (request.getKind().equals("EJBCA")) {
-            issuedAfter = AttributeDefinitionUtils.getAttributeContentValue(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_ISSUED_AFTER, request.getAttributes(), DateTimeAttributeContent.class);
+            issuedAfter = AttributeDefinitionUtils.getSingleItemAttributeContentValue(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_ISSUED_AFTER, request.getAttributes(), DateTimeAttributeContent.class).getData();
         }
         if (request.getKind().equals("EJBCA-SCHEDULE")) {
-            Integer issuedDaysBefore = AttributeDefinitionUtils.getAttributeContentValue(DiscoveryAttributeServiceImpl.ATTRIBUTE_ISSUED_DAYS_BEFORE, request.getAttributes(), BaseAttributeContent.class);
+            Integer issuedDaysBefore = AttributeDefinitionUtils.getSingleItemAttributeContentValue(DiscoveryAttributeServiceImpl.ATTRIBUTE_ISSUED_DAYS_BEFORE, request.getAttributes(), IntegerAttributeContent.class).getData();
             issuedAfter = ZonedDateTime.now();
             issuedAfter = issuedAfter.minusDays(issuedDaysBefore);
         }
@@ -134,11 +143,11 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         do {
             searchResponse = ejbcaService.searchCertificates(instance.getUuid(), restApiUrl, searchRequest);
             // break the loop if there are no certificates returned from EJBCA
-            if (searchResponse.getCertificates().isEmpty()){
+            if (searchResponse.getCertificates().isEmpty()) {
                 break;
             }
             // set the next page
-            searchRequest.getPagination().setCurrentPage(searchResponse.getPaginationSummary().getCurrentPage()+1);
+            searchRequest.getPagination().setCurrentPage(searchResponse.getPaginationSummary().getCurrentPage() + 1);
             parseAndCreateCertificateEntry(searchResponse, history);
             certificatesFound = certificatesFound + searchResponse.getCertificates().size();
         } while (searchResponse.getPaginationSummary().getTotalCerts() == null);
