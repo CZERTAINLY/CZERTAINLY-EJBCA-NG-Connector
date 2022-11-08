@@ -107,16 +107,6 @@ public class DiscoverySupportController {
         return new BaseAttributeContent<>(url);
     }
 
-
-    @RequestMapping(
-            path = "/test",
-            method = RequestMethod.GET,
-            produces = "application/json"
-    )
-    public void test() {
-
-    }
-
     private void checkEjbcaVersion(String ejbcaInstanceName) throws NotFoundException {
         EjbcaVersion ejbcaVersion = ejbcaService.getEjbcaVersion(ejbcaInstanceName);
 
