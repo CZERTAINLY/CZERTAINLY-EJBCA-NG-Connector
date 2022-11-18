@@ -4,6 +4,7 @@ import com.czertainly.api.exception.AlreadyExistException;
 import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.model.client.attribute.RequestAttributeDto;
 import com.czertainly.api.model.common.NameAndIdDto;
+import com.czertainly.api.model.common.attribute.v2.InfoAttribute;
 import com.czertainly.api.model.common.attribute.v2.content.BooleanAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
@@ -29,7 +30,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_CERTIFICATE_PROFILE;
@@ -77,7 +77,7 @@ public class EjbcaServiceImpl implements EjbcaService {
     }
 
     @Override
-    public void createEndEntity(String authorityUuid, String username, String password, String subjectDn, List<RequestAttributeDto> raProfileAttributes, Map<String, Object> metadata) throws NotFoundException, AlreadyExistException {
+    public void createEndEntityWithMeta(String authorityUuid, String username, String password, String subjectDn, List<RequestAttributeDto> raProfileAttributes, List<InfoAttribute> metadata) throws NotFoundException, AlreadyExistException {
         EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityUuid);
 
         if (getUser(ejbcaWS, username) != null) {
@@ -88,7 +88,7 @@ public class EjbcaServiceImpl implements EjbcaService {
         user.setUsername(username);
         user.setPassword(password);
         user.setSubjectDN(subjectDn);
-        prepareEndEntity(user, raProfileAttributes, metadata);
+        prepareEndEntityWithMeta(user, raProfileAttributes, metadata);
 
         try {
             ejbcaWS.editUser(user);
@@ -237,20 +237,20 @@ public class EjbcaServiceImpl implements EjbcaService {
         setUserExtensions(user, extension);
     }
 
-    private void prepareEndEntity(UserDataVOWS user, List<RequestAttributeDto> raProfileAttrs, Map<String, Object> metadata) {
+    private void prepareEndEntityWithMeta(UserDataVOWS user, List<RequestAttributeDto> raProfileAttrs, List<InfoAttribute> metadata) {
         setUserProfiles(user, raProfileAttrs);
 
-        String email = (String) metadata.get(CertificateEjbcaServiceImpl.META_EMAIL);
+        String email = AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateEjbcaServiceImpl.META_EMAIL, metadata, StringAttributeContent.class).getData();
         if (StringUtils.isNotBlank(email)) {
             user.setEmail(email);
         }
 
-        String san = (String) metadata.get(CertificateEjbcaServiceImpl.META_SAN);
+        String san = AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateEjbcaServiceImpl.META_SAN, metadata, StringAttributeContent.class).getData();
         if (StringUtils.isNotBlank(san)) {
             user.setSubjectAltName(san);
         }
 
-        String extension = (String) metadata.get(CertificateEjbcaServiceImpl.META_EXTENSION);
+        String extension = AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateEjbcaServiceImpl.META_EXTENSION, metadata, StringAttributeContent.class).getData();
         setUserExtensions(user, extension);
     }
 
