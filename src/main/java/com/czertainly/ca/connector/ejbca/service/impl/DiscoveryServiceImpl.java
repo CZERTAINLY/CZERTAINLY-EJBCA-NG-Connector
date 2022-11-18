@@ -2,6 +2,10 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.model.common.NameAndIdDto;
+import com.czertainly.api.model.common.attribute.v2.AttributeType;
+import com.czertainly.api.model.common.attribute.v2.InfoAttribute;
+import com.czertainly.api.model.common.attribute.v2.InfoAttributeProperties;
+import com.czertainly.api.model.common.attribute.v2.content.AttributeContentType;
 import com.czertainly.api.model.common.attribute.v2.content.BaseAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.DateTimeAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.IntegerAttributeContent;
@@ -23,7 +27,6 @@ import com.czertainly.ca.connector.ejbca.dto.ejbca.response.SearchCertificatesRe
 import com.czertainly.ca.connector.ejbca.service.DiscoveryHistoryService;
 import com.czertainly.ca.connector.ejbca.service.DiscoveryService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
-import com.czertainly.ca.connector.ejbca.util.MetaDefinitions;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +43,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -82,9 +83,7 @@ public class DiscoveryServiceImpl implements DiscoveryService {
             discoverCertificatesInternal(request, history);
         } catch (Exception e) {
             history.setStatus(DiscoveryStatus.FAILED);
-            Map<String, Object> meta = new LinkedHashMap<>();
-            meta.put("reason", e.getMessage());
-            history.setMeta(MetaDefinitions.serialize(meta));
+            history.setMeta(AttributeDefinitionUtils.serialize(getReasonMeta(e.getMessage())));
             discoveryHistoryService.setHistory(history);
             logger.error(e.getMessage());
         }
@@ -96,7 +95,7 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         dto.setUuid(history.getUuid());
         dto.setName(history.getName());
         dto.setStatus(history.getStatus());
-        dto.setMeta(MetaDefinitions.deserialize(history.getMeta()));
+        dto.setMeta(AttributeDefinitionUtils.deserialize(history.getMeta(), InfoAttribute.class));
         int totalCertificateSize = certificateRepository.findByDiscoveryId(history.getId()).size();
         dto.setTotalCertificatesDiscovered(totalCertificateSize);
         if (history.getStatus() == DiscoveryStatus.IN_PROGRESS) {
@@ -117,9 +116,30 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         discoveryHistoryService.deleteHistory(discoveryHistory);
     }
 
+    private List<InfoAttribute> getReasonMeta(String exception) {
+        List<InfoAttribute> attributes = new ArrayList<>();
+
+        //Exception Reason
+        InfoAttribute attribute = new InfoAttribute();
+        attribute.setName("reason");
+        attribute.setUuid("abc0412a-60f6-11ed-9b6a-0242ac120002");
+        attribute.setContentType(AttributeContentType.STRING);
+        attribute.setType(AttributeType.META);
+        attribute.setDescription("Reason for failure");
+
+        InfoAttributeProperties attributeProperties = new InfoAttributeProperties();
+        attributeProperties.setLabel("Reason");
+        attributeProperties.setVisible(true);
+
+        attribute.setProperties(attributeProperties);
+        attribute.setContent(List.of(new StringAttributeContent(exception)));
+        attributes.add(attribute);
+
+        return attributes;
+    }
+
     private void discoverCertificatesInternal(DiscoveryRequestDto request, DiscoveryHistory history) throws Exception {
         logger.info("Discovery initiated for the request with name {}", request.getName());
-        Map<String, Object> meta = new LinkedHashMap<>();
         int certificatesFound = 0;
 
         final AuthorityInstanceNameAndUuidDto instance = AttributeDefinitionUtils.getObjectAttributeContentData(DiscoveryAttributeServiceImpl.ATTRIBUTE_EJBCA_INSTANCE, request.getAttributes(), AuthorityInstanceNameAndUuidDto.class).get(0);
@@ -153,12 +173,30 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         } while (searchResponse.getPaginationSummary().getTotalCerts() == null);
 
         history.setStatus(DiscoveryStatus.COMPLETED);
-
-        meta.put("totalCertificates", certificatesFound);
-
-        history.setMeta(MetaDefinitions.serialize(meta));
+        history.setMeta(AttributeDefinitionUtils.serialize(getDiscoveryMeta(certificatesFound)));
         discoveryHistoryService.setHistory(history);
         logger.info("Discovery Completed. Name of the discovery is {}", request.getName());
+    }
+
+    private List<InfoAttribute> getDiscoveryMeta(Integer totalCertificates) {
+        List<InfoAttribute> attributes = new ArrayList<>();
+
+        //Total Certificates
+        InfoAttribute attribute = new InfoAttribute();
+        attribute.setName("totalCertificates");
+        attribute.setUuid("20add2d6-60f7-11ed-9b6a-0242ac120002");
+        attribute.setContentType(AttributeContentType.INTEGER);
+        attribute.setType(AttributeType.META);
+        attribute.setDescription("Total Number of Certificates Discovered");
+
+        InfoAttributeProperties attributeProperties = new InfoAttributeProperties();
+        attributeProperties.setLabel("Total Certificates Discovered");
+        attributeProperties.setVisible(true);
+
+        attribute.setProperties(attributeProperties);
+        attribute.setContent(List.of(new IntegerAttributeContent(totalCertificates.toString(), totalCertificates)));
+        attributes.add(attribute);
+        return attributes;
     }
 
     private SearchCertificatesRestRequestV2 prepareSearchRequest(
@@ -239,16 +277,100 @@ public class DiscoveryServiceImpl implements DiscoveryService {
             cert.setDiscoveryId(discoveryHistory.getId());
             cert.setBase64Content(new String(certificateRestResponseV2.getCertificate(), StandardCharsets.UTF_8));
 
-            Map<String, Object> meta = new LinkedHashMap<>();
-            meta.put("certificateProfileId", certificateRestResponseV2.getCertificateProfileId());
-            meta.put("endEntityProfileId", certificateRestResponseV2.getEndEntityProfileId());
-            meta.put("username", certificateRestResponseV2.getUsername());
-            meta.put("discoverySource", "EJBCA-NG");
-            meta.put("discoveryName", discoveryHistory.getName());
-
-            cert.setMeta(MetaDefinitions.serialize(meta));
+            cert.setMeta(AttributeDefinitionUtils.serialize(getCertificateMeta(
+                    certificateRestResponseV2.getCertificateProfileId().toString(),
+                    certificateRestResponseV2.getEndEntityProfileId().toString(),
+                    certificateRestResponseV2.getUsername(),
+                    discoveryHistory.getName()
+            )));
 
             certificateRepository.save(cert);
         }
+    }
+
+    private List<InfoAttribute> getCertificateMeta(String certificateProfileId, String endEntityProfileId, String username, String discoveryName) {
+        List<InfoAttribute> attributes = new ArrayList<>();
+
+        //Certificate Profile ID
+        InfoAttribute attribute = new InfoAttribute();
+        attribute.setName("certificateProfileId");
+        attribute.setUuid("df2fb570-60fd-11ed-9b6a-0242ac120002");
+        attribute.setContentType(AttributeContentType.STRING);
+        attribute.setType(AttributeType.META);
+        attribute.setDescription("Certificate Profile ID from where the certificate is discovered");
+
+        InfoAttributeProperties attributeProperties = new InfoAttributeProperties();
+        attributeProperties.setLabel("Certificate Profile ID");
+        attributeProperties.setVisible(true);
+
+        attribute.setProperties(attributeProperties);
+        attribute.setContent(List.of(new StringAttributeContent(certificateProfileId)));
+        attributes.add(attribute);
+
+        //End Entity Profile ID
+        InfoAttribute endEntityProfileIdAttribute = new InfoAttribute();
+        endEntityProfileIdAttribute.setName("endEntityProfileId");
+        endEntityProfileIdAttribute.setUuid("df2fb93a-60fd-11ed-9b6a-0242ac120002");
+        endEntityProfileIdAttribute.setContentType(AttributeContentType.STRING);
+        endEntityProfileIdAttribute.setType(AttributeType.META);
+        endEntityProfileIdAttribute.setDescription("End Entity Profile ID from where the certificate is discovered");
+
+        InfoAttributeProperties endEntityProfileIdAttributeProperties = new InfoAttributeProperties();
+        endEntityProfileIdAttributeProperties.setLabel("End Entity Profile ID");
+        endEntityProfileIdAttributeProperties.setVisible(true);
+
+        endEntityProfileIdAttribute.setProperties(endEntityProfileIdAttributeProperties);
+        endEntityProfileIdAttribute.setContent(List.of(new StringAttributeContent(endEntityProfileId)));
+        attributes.add(endEntityProfileIdAttribute);
+
+        //Username
+        InfoAttribute usernameAttribute = new InfoAttribute();
+        usernameAttribute.setName("username");
+        usernameAttribute.setUuid("df2fbaa2-60fd-11ed-9b6a-0242ac120002");
+        usernameAttribute.setContentType(AttributeContentType.STRING);
+        usernameAttribute.setType(AttributeType.META);
+        usernameAttribute.setDescription("Username of certificate");
+
+        InfoAttributeProperties usernameAttributeProperties = new InfoAttributeProperties();
+        usernameAttributeProperties.setLabel("Username");
+        usernameAttributeProperties.setVisible(true);
+
+        usernameAttribute.setProperties(usernameAttributeProperties);
+        usernameAttribute.setContent(List.of(new StringAttributeContent(username)));
+        attributes.add(usernameAttribute);
+
+        //Discovery Source
+        InfoAttribute discoverySourceAttribute = new InfoAttribute();
+        discoverySourceAttribute.setName("discoverySource");
+        discoverySourceAttribute.setUuid("df2fbebc-60fd-11ed-9b6a-0242ac120002");
+        discoverySourceAttribute.setContentType(AttributeContentType.STRING);
+        discoverySourceAttribute.setType(AttributeType.META);
+        discoverySourceAttribute.setDescription("Source from where the certificate is discovered");
+
+        InfoAttributeProperties discoverySourceAttributeProperties = new InfoAttributeProperties();
+        discoverySourceAttributeProperties.setLabel("Discovery Source");
+        discoverySourceAttributeProperties.setVisible(true);
+
+        discoverySourceAttribute.setProperties(discoverySourceAttributeProperties);
+        discoverySourceAttribute.setContent(List.of(new StringAttributeContent("EJBCA-NG")));
+        attributes.add(discoverySourceAttribute);
+
+        //Discovery Name
+        InfoAttribute discoveryNameAttribute = new InfoAttribute();
+        discoveryNameAttribute.setName("discoveryName");
+        discoveryNameAttribute.setUuid("df2fbffc-60fd-11ed-9b6a-0242ac120002");
+        discoveryNameAttribute.setContentType(AttributeContentType.STRING);
+        discoveryNameAttribute.setType(AttributeType.META);
+        discoveryNameAttribute.setDescription("Name of the discovery");
+
+        InfoAttributeProperties discoveryNameAttributeProperties = new InfoAttributeProperties();
+        discoveryNameAttributeProperties.setLabel("Discovery Name");
+        discoveryNameAttributeProperties.setVisible(true);
+
+        discoveryNameAttribute.setProperties(discoveryNameAttributeProperties);
+        discoveryNameAttribute.setContent(List.of(new StringAttributeContent(discoveryName)));
+        attributes.add(discoveryNameAttribute);
+
+        return attributes;
     }
 }
