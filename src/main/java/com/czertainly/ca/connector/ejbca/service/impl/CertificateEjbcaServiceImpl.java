@@ -153,14 +153,14 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         InfoAttribute emailAttribute = new InfoAttribute();
         emailAttribute.setUuid("b42ab942-60fd-11ed-9b6a-0242ac120002");
         emailAttribute.setName(META_EMAIL);
-        emailAttribute.setDescription("EMail");
+        emailAttribute.setDescription("Email");
         emailAttribute.setType(AttributeType.META);
         emailAttribute.setContentType(AttributeContentType.STRING);
         emailAttribute.setContent(List.of(new StringAttributeContent(email)));
 
         InfoAttributeProperties emailAttributeProperties = new InfoAttributeProperties();
         emailAttributeProperties.setVisible(true);
-        emailAttributeProperties.setLabel("EMail");
+        emailAttributeProperties.setLabel("Email");
         emailAttribute.setProperties(emailAttributeProperties);
 
         attributes.add(emailAttribute);
