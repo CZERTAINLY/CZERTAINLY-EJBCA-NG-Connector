@@ -2,10 +2,10 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.model.common.attribute.v2.AttributeType;
-import com.czertainly.api.model.common.attribute.v2.InfoAttribute;
-import com.czertainly.api.model.common.attribute.v2.InfoAttributeProperties;
+import com.czertainly.api.model.common.attribute.v2.MetadataAttribute;
 import com.czertainly.api.model.common.attribute.v2.content.AttributeContentType;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.properties.MetadataAttributeProperties;
 import com.czertainly.api.model.connector.v2.CertRevocationDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.api.model.connector.v2.CertificateRenewRequestDto;
@@ -87,7 +87,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
     public CertificateDataResponseDto renewCertificate(String uuid, CertificateRenewRequestDto request) throws Exception {
         JcaPKCS10CertificationRequest csr = parseCsrToJcaObject(request.getPkcs10());
 
-        List<InfoAttribute> metadata = request.getMeta();
+        List<MetadataAttribute> metadata = request.getMeta();
 
         // check if we have the username in the metadata, and if not, generate username
         String username = null;
@@ -114,7 +114,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         // issue certificate
         CertificateDataResponseDto certificate = ejbcaService.issueCertificate(uuid, username, password, Base64.getEncoder().encodeToString(csr.getEncoded()));
 
-        List<InfoAttribute> meta = new ArrayList<>();
+        List<MetadataAttribute> meta = new ArrayList<>();
         meta.addAll(metadata.stream().filter(e -> !e.getName().equals(META_EJBCA_USERNAME)).collect(Collectors.toList()));
         meta.addAll(getUsernameMetadata(username));
         certificate.setMeta(meta);
@@ -122,11 +122,11 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         return certificate;
     }
 
-    private List<InfoAttribute> getUsernameMetadata(String username) {
-        List<InfoAttribute> attributes = new ArrayList<>();
+    private List<MetadataAttribute> getUsernameMetadata(String username) {
+        List<MetadataAttribute> attributes = new ArrayList<>();
 
         // Username
-        InfoAttribute attribute = new InfoAttribute();
+        MetadataAttribute attribute = new MetadataAttribute();
         attribute.setUuid("b42ab690-60fd-11ed-9b6a-0242ac120002");
         attribute.setName(META_EJBCA_USERNAME);
         attribute.setDescription("EJBCA Username");
@@ -134,7 +134,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         attribute.setContentType(AttributeContentType.STRING);
         attribute.setContent(List.of(new StringAttributeContent(username)));
 
-        InfoAttributeProperties attributeProperties = new InfoAttributeProperties();
+        MetadataAttributeProperties attributeProperties = new MetadataAttributeProperties();
         attributeProperties.setVisible(true);
         attributeProperties.setLabel("EJBCA Username");
         attribute.setProperties(attributeProperties);
@@ -143,14 +143,14 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         return attributes;
     }
 
-    private List<InfoAttribute> getIssueMetadata(String username, String email, String san, String extensions) {
-        List<InfoAttribute> attributes = new ArrayList<>();
+    private List<MetadataAttribute> getIssueMetadata(String username, String email, String san, String extensions) {
+        List<MetadataAttribute> attributes = new ArrayList<>();
 
         // Username
         attributes.addAll(getUsernameMetadata(username));
 
         // EMAIL
-        InfoAttribute emailAttribute = new InfoAttribute();
+        MetadataAttribute emailAttribute = new MetadataAttribute();
         emailAttribute.setUuid("b42ab942-60fd-11ed-9b6a-0242ac120002");
         emailAttribute.setName(META_EMAIL);
         emailAttribute.setDescription("Email");
@@ -158,7 +158,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         emailAttribute.setContentType(AttributeContentType.STRING);
         emailAttribute.setContent(List.of(new StringAttributeContent(email)));
 
-        InfoAttributeProperties emailAttributeProperties = new InfoAttributeProperties();
+        MetadataAttributeProperties emailAttributeProperties = new MetadataAttributeProperties();
         emailAttributeProperties.setVisible(true);
         emailAttributeProperties.setLabel("Email");
         emailAttribute.setProperties(emailAttributeProperties);
@@ -166,7 +166,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         attributes.add(emailAttribute);
 
         // SAN Attribute
-        InfoAttribute sanAttribute = new InfoAttribute();
+        MetadataAttribute sanAttribute = new MetadataAttribute();
         sanAttribute.setUuid("b42abc58-60fd-11ed-9b6a-0242ac120002");
         sanAttribute.setName(META_SAN);
         sanAttribute.setDescription("SAN");
@@ -174,7 +174,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         sanAttribute.setContentType(AttributeContentType.STRING);
         sanAttribute.setContent(List.of(new StringAttributeContent(san)));
 
-        InfoAttributeProperties sanAttributeProperties = new InfoAttributeProperties();
+        MetadataAttributeProperties sanAttributeProperties = new MetadataAttributeProperties();
         sanAttributeProperties.setVisible(true);
         sanAttributeProperties.setLabel("SAN");
         sanAttribute.setProperties(sanAttributeProperties);
@@ -182,7 +182,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         attributes.add(sanAttribute);
 
         //Extension
-        InfoAttribute extensionAttribute = new InfoAttribute();
+        MetadataAttribute extensionAttribute = new MetadataAttribute();
         extensionAttribute.setUuid("b42abe38-60fd-11ed-9b6a-0242ac120002");
         extensionAttribute.setName(META_EXTENSION);
         extensionAttribute.setDescription("Extension");
@@ -190,7 +190,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         extensionAttribute.setContentType(AttributeContentType.STRING);
         extensionAttribute.setContent(List.of(new StringAttributeContent(extensions)));
 
-        InfoAttributeProperties extensionAttributeProperties = new InfoAttributeProperties();
+        MetadataAttributeProperties extensionAttributeProperties = new MetadataAttributeProperties();
         extensionAttributeProperties.setVisible(true);
         extensionAttributeProperties.setLabel("Extension");
         extensionAttribute.setProperties(extensionAttributeProperties);

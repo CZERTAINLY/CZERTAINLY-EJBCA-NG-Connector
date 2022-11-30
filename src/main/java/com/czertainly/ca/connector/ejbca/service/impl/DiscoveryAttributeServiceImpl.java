@@ -3,7 +3,6 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 import com.czertainly.api.exception.ValidationError;
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.model.client.attribute.RequestAttributeDto;
-import com.czertainly.api.model.common.attribute.v2.DataAttributeProperties;
 import com.czertainly.api.model.common.attribute.v2.AttributeType;
 import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
 import com.czertainly.api.model.common.attribute.v2.DataAttribute;
@@ -15,6 +14,7 @@ import com.czertainly.api.model.common.attribute.v2.content.BaseAttributeContent
 import com.czertainly.api.model.common.attribute.v2.content.IntegerAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.ObjectAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.properties.DataAttributeProperties;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.dto.AuthorityInstanceNameAndUuidDto;

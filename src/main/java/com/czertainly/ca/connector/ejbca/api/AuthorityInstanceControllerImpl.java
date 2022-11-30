@@ -6,7 +6,6 @@ import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.interfaces.connector.AuthorityInstanceController;
 import com.czertainly.api.model.client.attribute.RequestAttributeDto;
 import com.czertainly.api.model.common.NameAndIdDto;
-import com.czertainly.api.model.common.attribute.v2.DataAttributeProperties;
 import com.czertainly.api.model.common.attribute.v2.AttributeType;
 import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
 import com.czertainly.api.model.common.attribute.v2.DataAttribute;
@@ -18,6 +17,7 @@ import com.czertainly.api.model.common.attribute.v2.content.BaseAttributeContent
 import com.czertainly.api.model.common.attribute.v2.content.BooleanAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.ObjectAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.properties.DataAttributeProperties;
 import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceDto;
 import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceRequestDto;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
