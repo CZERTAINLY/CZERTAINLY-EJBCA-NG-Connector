@@ -1,10 +1,10 @@
 package com.czertainly.ca.connector.ejbca.config;
 
 import com.czertainly.api.model.common.attribute.v2.AttributeType;
-import com.czertainly.api.model.common.attribute.v2.InfoAttribute;
-import com.czertainly.api.model.common.attribute.v2.InfoAttributeProperties;
+import com.czertainly.api.model.common.attribute.v2.MetadataAttribute;
 import com.czertainly.api.model.common.attribute.v2.content.AttributeContentType;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.properties.MetadataAttributeProperties;
 import com.czertainly.api.model.core.discovery.DiscoveryStatus;
 import com.czertainly.ca.connector.ejbca.dao.entity.DiscoveryHistory;
 import com.czertainly.ca.connector.ejbca.service.DiscoveryHistoryService;
@@ -52,18 +52,18 @@ public class CustomAsyncConfigurer implements AsyncConfigurer {
         };
     }
 
-    private List<InfoAttribute> getReasonMeta(String exception) {
-        List<InfoAttribute> attributes = new ArrayList<>();
+    private List<MetadataAttribute> getReasonMeta(String exception) {
+        List<MetadataAttribute> attributes = new ArrayList<>();
 
         //Exception Reason
-        InfoAttribute attribute = new InfoAttribute();
+        MetadataAttribute attribute = new MetadataAttribute();
         attribute.setName("reason");
         attribute.setUuid("abc0412a-60f6-11ed-9b6a-0242ac120002");
         attribute.setContentType(AttributeContentType.STRING);
         attribute.setType(AttributeType.META);
         attribute.setDescription("Reason for failure");
 
-        InfoAttributeProperties attributeProperties = new InfoAttributeProperties();
+        MetadataAttributeProperties attributeProperties = new MetadataAttributeProperties();
         attributeProperties.setLabel("Reason");
         attributeProperties.setVisible(true);
 

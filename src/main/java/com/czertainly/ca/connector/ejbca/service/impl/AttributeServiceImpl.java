@@ -2,7 +2,6 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.interfaces.connector.AttributesController;
 import com.czertainly.api.model.client.attribute.RequestAttributeDto;
-import com.czertainly.api.model.common.attribute.v2.DataAttributeProperties;
 import com.czertainly.api.model.common.attribute.v2.AttributeType;
 import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
 import com.czertainly.api.model.common.attribute.v2.DataAttribute;
@@ -10,6 +9,7 @@ import com.czertainly.api.model.common.attribute.v2.callback.AttributeCallback;
 import com.czertainly.api.model.common.attribute.v2.callback.AttributeCallbackMapping;
 import com.czertainly.api.model.common.attribute.v2.callback.AttributeValueTarget;
 import com.czertainly.api.model.common.attribute.v2.content.AttributeContentType;
+import com.czertainly.api.model.common.attribute.v2.properties.DataAttributeProperties;
 import com.czertainly.ca.connector.ejbca.service.AttributeService;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.slf4j.Logger;

@@ -4,7 +4,7 @@ import com.czertainly.api.exception.AlreadyExistException;
 import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.model.client.attribute.RequestAttributeDto;
 import com.czertainly.api.model.common.NameAndIdDto;
-import com.czertainly.api.model.common.attribute.v2.InfoAttribute;
+import com.czertainly.api.model.common.attribute.v2.MetadataAttribute;
 import com.czertainly.api.model.common.attribute.v2.content.BooleanAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
@@ -77,7 +77,7 @@ public class EjbcaServiceImpl implements EjbcaService {
     }
 
     @Override
-    public void createEndEntityWithMeta(String authorityUuid, String username, String password, String subjectDn, List<RequestAttributeDto> raProfileAttributes, List<InfoAttribute> metadata) throws NotFoundException, AlreadyExistException {
+    public void createEndEntityWithMeta(String authorityUuid, String username, String password, String subjectDn, List<RequestAttributeDto> raProfileAttributes, List<MetadataAttribute> metadata) throws NotFoundException, AlreadyExistException {
         EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityUuid);
 
         if (getUser(ejbcaWS, username) != null) {
@@ -237,7 +237,7 @@ public class EjbcaServiceImpl implements EjbcaService {
         setUserExtensions(user, extension);
     }
 
-    private void prepareEndEntityWithMeta(UserDataVOWS user, List<RequestAttributeDto> raProfileAttrs, List<InfoAttribute> metadata) {
+    private void prepareEndEntityWithMeta(UserDataVOWS user, List<RequestAttributeDto> raProfileAttrs, List<MetadataAttribute> metadata) {
         setUserProfiles(user, raProfileAttrs);
 
         String email = AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateEjbcaServiceImpl.META_EMAIL, metadata, StringAttributeContent.class).getData();
