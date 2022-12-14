@@ -57,6 +57,7 @@ public class CertificateControllerImpl implements CertificateController {
         emailProperties.setVisible(true);
         emailProperties.setList(false);
         emailProperties.setMultiSelect(false);
+        email.setProperties(emailProperties);
         attrs.add(email);
 
         DataAttribute san = new DataAttribute();
@@ -72,6 +73,7 @@ public class CertificateControllerImpl implements CertificateController {
         sanProperties.setVisible(true);
         sanProperties.setList(false);
         sanProperties.setMultiSelect(false);
+        san.setProperties(sanProperties);
         attrs.add(san);
 
         DataAttribute extension = new DataAttribute();
@@ -87,6 +89,7 @@ public class CertificateControllerImpl implements CertificateController {
         extensionProperties.setVisible(true);
         extensionProperties.setList(false);
         extensionProperties.setMultiSelect(false);
+        extension.setProperties(extensionProperties);
         attrs.add(extension);
 
         return attrs;
