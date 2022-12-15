@@ -6,15 +6,13 @@ import com.czertainly.api.model.client.attribute.RequestAttributeDto;
 import com.czertainly.api.model.common.attribute.v2.AttributeType;
 import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
 import com.czertainly.api.model.common.attribute.v2.DataAttribute;
+import com.czertainly.api.model.common.attribute.v2.InfoAttribute;
 import com.czertainly.api.model.common.attribute.v2.callback.AttributeCallback;
 import com.czertainly.api.model.common.attribute.v2.callback.AttributeCallbackMapping;
 import com.czertainly.api.model.common.attribute.v2.callback.AttributeValueTarget;
-import com.czertainly.api.model.common.attribute.v2.content.AttributeContentType;
-import com.czertainly.api.model.common.attribute.v2.content.BaseAttributeContent;
-import com.czertainly.api.model.common.attribute.v2.content.IntegerAttributeContent;
-import com.czertainly.api.model.common.attribute.v2.content.ObjectAttributeContent;
-import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.*;
 import com.czertainly.api.model.common.attribute.v2.properties.DataAttributeProperties;
+import com.czertainly.api.model.common.attribute.v2.properties.InfoAttributeProperties;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.dto.AuthorityInstanceNameAndUuidDto;
@@ -66,6 +64,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         logger.info("Listing discovery attributes for {}", kind);
 
         List<BaseAttribute> attributes = new ArrayList<>();
+        attributes.add(infoDiscoveryDescription());
         attributes.add(prepareEjbcaInstanceAttribute());
         attributes.add(ejbcaRestApiUrl());
         attributes.add(listCas());
@@ -139,6 +138,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attributeProperties.setVisible(true);
         attributeProperties.setList(true);
         attributeProperties.setMultiSelect(true);
+        attribute.setProperties(attributeProperties);
         attribute.setContent(List.of());
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
@@ -168,6 +168,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attributeProperties.setVisible(true);
         attributeProperties.setList(true);
         attributeProperties.setMultiSelect(true);
+        attribute.setProperties(attributeProperties);
         attribute.setContent(List.of());
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
@@ -203,6 +204,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attributeProperties.setVisible(true);
         attributeProperties.setList(true);
         attributeProperties.setMultiSelect(true);
+        attribute.setProperties(attributeProperties);
         attribute.setContent(statuses);
 
         return attribute;
@@ -271,6 +273,26 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attributeProperties.setMultiSelect(false);
         attribute.setProperties(attributeProperties);
         attribute.setContent(List.of(new IntegerAttributeContent(5)));
+
+        return attribute;
+    }
+
+    private InfoAttribute infoDiscoveryDescription() {
+        InfoAttribute attribute = new InfoAttribute();
+        attribute.setUuid("4a92a6c5-38c0-4ebf-8297-594d39572c9c");
+        attribute.setName("info_discoveryProcess");
+        attribute.setDescription("Discovery process information");
+        attribute.setType(AttributeType.INFO);
+        attribute.setContentType(AttributeContentType.TEXT);
+        InfoAttributeProperties attributeProperties = new InfoAttributeProperties();
+        attributeProperties.setLabel("Discovery process information");
+        attributeProperties.setVisible(true);
+        attribute.setProperties(attributeProperties);
+        attribute.setContent(List.of(new TextAttributeContent("## Overview<br>  " +
+                "Select EJBCA instance where Discovery process should search for Certificates and then you can optionally select:<br>  " +
+                "- Certification authority<br>  " +
+                "- End Entity Profile<br>  " +
+                "- Certificate status")));
 
         return attribute;
     }
