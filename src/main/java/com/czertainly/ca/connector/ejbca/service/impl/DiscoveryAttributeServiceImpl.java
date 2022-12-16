@@ -3,10 +3,7 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 import com.czertainly.api.exception.ValidationError;
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.model.client.attribute.RequestAttributeDto;
-import com.czertainly.api.model.common.attribute.v2.AttributeType;
-import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
-import com.czertainly.api.model.common.attribute.v2.DataAttribute;
-import com.czertainly.api.model.common.attribute.v2.InfoAttribute;
+import com.czertainly.api.model.common.attribute.v2.*;
 import com.czertainly.api.model.common.attribute.v2.callback.AttributeCallback;
 import com.czertainly.api.model.common.attribute.v2.callback.AttributeCallbackMapping;
 import com.czertainly.api.model.common.attribute.v2.callback.AttributeValueTarget;
@@ -48,8 +45,14 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
     public static final String ATTRIBUTE_EJBCA_STATUS_LABEL = "Certificate status";
     public static final String ATTRIBUTE_EJBCA_ISSUED_AFTER_LABEL = "Certificates issued after";
     public static final String ATTRIBUTE_ISSUED_DAYS_BEFORE_LABEL = "Number of days";
+
+    public static final String ATTRIBUTE_GROUP_DISCOVERY_CONF = "discoveryConfiguration";
+    public static final String ATTRIBUTE_GROUP_DISCOVERY_CONF_LABEL = "Discovery configuration";
+
     private static final Logger logger = LoggerFactory.getLogger(DiscoveryAttributeServiceImpl.class);
+
     private AuthorityInstanceRepository authorityInstanceRepository;
+
 
     @Autowired
     public void setAuthorityInstanceRepository(AuthorityInstanceRepository authorityInstanceRepository) {
@@ -66,18 +69,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         List<BaseAttribute> attributes = new ArrayList<>();
         attributes.add(infoDiscoveryDescription());
         attributes.add(prepareEjbcaInstanceAttribute());
-        attributes.add(ejbcaRestApiUrl());
-        attributes.add(listCas());
-        attributes.add(listEndEntityProfiles());
-        attributes.add(listStatus());
-
-        if (kind.equals(DiscoveryKind.EJBCA.name())) {
-            attributes.add(issuedAfter());
-        }
-
-        if (kind.equals(DiscoveryKind.EJBCA_SCHEDULE.name())) {
-            attributes.add(issuedDaysBefore());
-        }
+        attributes.add(discoveryConfiguration(kind));
 
         return attributes;
     }
@@ -95,6 +87,31 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         AttributeDefinitionUtils.validateAttributes(getAttributes(kind), attributes);
 
         return true;
+    }
+
+    @Override
+    public List<BaseAttribute> getInstanceAndKindAttributes(
+            String kind,
+            List<BaseAttributeContent> eeProfilesContent,
+            List<BaseAttributeContent> casContent,
+            List<BaseAttributeContent> urlContent
+    ) {
+        List<BaseAttribute> attributes = new ArrayList<>();
+
+        attributes.add(ejbcaRestApiUrlWithContent(urlContent));
+        attributes.add(listCasWithContent(casContent));
+        attributes.add(listEndEntityProfilesWithContent(eeProfilesContent));
+        attributes.add(listStatus());
+
+        if (kind.equals(DiscoveryKind.EJBCA.name())) {
+            attributes.add(issuedAfter());
+        }
+
+        if (kind.equals(DiscoveryKind.EJBCA_SCHEDULE.name())) {
+            attributes.add(issuedDaysBefore());
+        }
+
+        return attributes;
     }
 
     private DataAttribute prepareEjbcaInstanceAttribute() {
@@ -124,7 +141,32 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         return attribute;
     }
 
-    private DataAttribute listCas() {
+    private GroupAttribute discoveryConfiguration(String kind) {
+        // create group attribute
+        GroupAttribute attribute = new GroupAttribute();
+        attribute.setUuid("dce22e96-3335-4181-b90c-c7f887d8d109");
+        attribute.setName(ATTRIBUTE_GROUP_DISCOVERY_CONF);
+        attribute.setType(AttributeType.GROUP);
+        attribute.setDescription(ATTRIBUTE_GROUP_DISCOVERY_CONF_LABEL);
+
+        // prepare mappings for callback
+        Set<AttributeCallbackMapping> mappings = new HashSet<>();
+        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE + ".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
+        mappings.add(new AttributeCallbackMapping("kind", AttributeValueTarget.PATH_VARIABLE, kind));
+
+        // create attribute callback
+        AttributeCallback attributeCallback = new AttributeCallback();
+        attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/configuration");
+        attributeCallback.setCallbackMethod("GET");
+        attributeCallback.setMappings(mappings);
+
+        // set attribute callback
+        attribute.setAttributeCallback(attributeCallback);
+
+        return attribute;
+    }
+
+    private DataAttribute listCasAttributeBase() {
         DataAttribute attribute = new DataAttribute();
         attribute.setUuid("ffe7c27a-48e4-41fa-93de-8ddac65fec46");
         attribute.setName(ATTRIBUTE_EJBCA_CA);
@@ -141,6 +183,12 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setProperties(attributeProperties);
         attribute.setContent(List.of());
 
+        return attribute;
+    }
+
+    private DataAttribute listCas() {
+        DataAttribute attribute = listCasAttributeBase();
+
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
         mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE + ".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
 
@@ -154,7 +202,15 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         return attribute;
     }
 
-    private DataAttribute listEndEntityProfiles() {
+    private DataAttribute listCasWithContent(List<BaseAttributeContent> casContent) {
+        DataAttribute attribute = listCasAttributeBase();
+
+        attribute.setContent(casContent);
+
+        return attribute;
+    }
+
+    private DataAttribute listEndEntityProfilesAttributeBase() {
         DataAttribute attribute = new DataAttribute();
         attribute.setUuid("bbf2d142-f35a-437f-81c7-35c128881fc0");
         attribute.setName(ATTRIBUTE_END_ENTITY_PROFILE);
@@ -171,6 +227,12 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attribute.setProperties(attributeProperties);
         attribute.setContent(List.of());
 
+        return attribute;
+    }
+
+    private DataAttribute listEndEntityProfiles() {
+        DataAttribute attribute = listEndEntityProfilesAttributeBase();
+
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
         mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE + ".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
 
@@ -180,6 +242,14 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attributeCallback.setMappings(mappings);
 
         attribute.setAttributeCallback(attributeCallback);
+
+        return attribute;
+    }
+
+    private DataAttribute listEndEntityProfilesWithContent(List<BaseAttributeContent> eeProfilesContent) {
+        DataAttribute attribute = listEndEntityProfilesAttributeBase();
+
+        attribute.setContent(eeProfilesContent);
 
         return attribute;
     }
@@ -210,7 +280,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         return attribute;
     }
 
-    private DataAttribute ejbcaRestApiUrl() {
+    private DataAttribute ejbcaRestApiUrlAttributeBase() {
         DataAttribute attribute = new DataAttribute();
         attribute.setUuid("c5b974dd-e00a-44b6-b9bc-0946e79730a2");
         attribute.setName(ATTRIBUTE_EJBCA_RESTAPI_URL);
@@ -226,6 +296,12 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attributeProperties.setMultiSelect(false);
         attribute.setProperties(attributeProperties);
 
+        return attribute;
+    }
+
+    private DataAttribute ejbcaRestApiUrl() {
+        DataAttribute attribute = ejbcaRestApiUrlAttributeBase();
+
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
         mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE + ".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
 
@@ -235,6 +311,14 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attributeCallback.setMappings(mappings);
 
         attribute.setAttributeCallback(attributeCallback);
+
+        return attribute;
+    }
+
+    private DataAttribute ejbcaRestApiUrlWithContent(List<BaseAttributeContent> urlContent) {
+        DataAttribute attribute = ejbcaRestApiUrlAttributeBase();
+
+        attribute.setContent(urlContent);
 
         return attribute;
     }
