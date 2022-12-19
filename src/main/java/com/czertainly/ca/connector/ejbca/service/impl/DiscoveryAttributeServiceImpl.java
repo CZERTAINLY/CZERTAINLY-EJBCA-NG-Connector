@@ -156,7 +156,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
 
         // create attribute callback
         AttributeCallback attributeCallback = new AttributeCallback();
-        attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/configuration");
+        attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/{kind}/configuration");
         attributeCallback.setCallbackMethod("GET");
         attributeCallback.setMappings(mappings);
 
