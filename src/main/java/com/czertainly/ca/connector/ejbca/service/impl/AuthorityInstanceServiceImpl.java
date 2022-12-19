@@ -8,9 +8,9 @@ import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
 import com.czertainly.api.model.common.attribute.v2.content.FileAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.SecretAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.data.CredentialAttributeContentData;
 import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceDto;
 import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceRequestDto;
-import com.czertainly.api.model.core.credential.CredentialDto;
 import com.czertainly.ca.connector.ejbca.config.ApplicationConfig;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
@@ -106,9 +106,9 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
         instance.setName(request.getName());
         instance.setUrl(AttributeDefinitionUtils.getSingleItemAttributeContentValue("url", request.getAttributes(), StringAttributeContent.class).getData());
         instance.setUuid(UUID.randomUUID().toString());
-        CredentialDto credential = AttributeDefinitionUtils.getCredentialContent("credential", request.getAttributes());
+        CredentialAttributeContentData credential = AttributeDefinitionUtils.getCredentialContent("credential", request.getAttributes());
         instance.setCredentialUuid(credential.getUuid());
-        instance.setCredentialData(AttributeDefinitionUtils.serialize(AttributeDefinitionUtils.responseAttributeConverter(credential.getAttributes())));
+        instance.setCredentialData(AttributeDefinitionUtils.serialize(credential.getAttributes()));
 
         instance.setAttributes(AttributeDefinitionUtils.serialize(AttributeDefinitionUtils.mergeAttributes(attributeService.getAttributes(request.getKind()), request.getAttributes())));
 
@@ -145,9 +145,9 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
         instance.setName(request.getName());
         instance.setUrl(AttributeDefinitionUtils.getSingleItemAttributeContentValue("url", request.getAttributes(), StringAttributeContent.class).getData());
 
-        CredentialDto credential = AttributeDefinitionUtils.getCredentialContent("credential", request.getAttributes());
+        CredentialAttributeContentData credential = AttributeDefinitionUtils.getCredentialContent("credential", request.getAttributes());
         instance.setCredentialUuid(credential.getUuid());
-        instance.setCredentialData(AttributeDefinitionUtils.serialize(AttributeDefinitionUtils.responseAttributeConverter(credential.getAttributes())));
+        instance.setCredentialData(AttributeDefinitionUtils.serialize(credential.getAttributes()));
 
         instance.setAttributes(AttributeDefinitionUtils.serialize(AttributeDefinitionUtils.mergeAttributes(attributeService.getAttributes(request.getKind()), request.getAttributes())));
         EjbcaWS connection;
