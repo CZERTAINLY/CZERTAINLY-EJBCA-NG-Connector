@@ -17,15 +17,15 @@ import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificateCrit
 import com.czertainly.ca.connector.ejbca.enums.DiscoveryKind;
 import com.czertainly.ca.connector.ejbca.service.DiscoveryAttributeService;
 import com.czertainly.core.util.AttributeDefinitionUtils;
+import net.steppschuh.markdowngenerator.list.UnorderedList;
+import net.steppschuh.markdowngenerator.text.Text;
+import net.steppschuh.markdowngenerator.text.heading.Heading;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -372,11 +372,21 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         attributeProperties.setLabel("Discovery process information");
         attributeProperties.setVisible(true);
         attribute.setProperties(attributeProperties);
-        attribute.setContent(List.of(new TextAttributeContent("## Overview<br>  " +
-                "Select EJBCA instance where Discovery process should search for Certificates and then you can optionally select:<br>  " +
-                "- Certification authority<br>  " +
-                "- End Entity Profile<br>  " +
-                "- Certificate status")));
+
+        // prepare markdown string
+        List<Object> items = Arrays.asList(
+                "Certification authority",
+                "End Entity Profile",
+                "Certificate status"
+        );
+        StringBuilder sb = new StringBuilder()
+                .append(new Heading("Overview", 2)).append("\n")
+                .append(new Text("Select EJBCA instance where Discovery process should search for Certificates and then you can optionally select:")).append("\n")
+                .append(new UnorderedList<>(items));
+
+        System.out.println(sb);
+
+        attribute.setContent(List.of(new TextAttributeContent(sb.toString())));
 
         return attribute;
     }
