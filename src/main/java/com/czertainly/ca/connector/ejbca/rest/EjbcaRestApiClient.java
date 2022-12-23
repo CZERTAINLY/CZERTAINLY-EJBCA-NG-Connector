@@ -12,6 +12,7 @@ import com.czertainly.core.util.AttributeDefinitionUtils;
 import com.czertainly.core.util.KeyStoreUtils;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
@@ -79,8 +80,9 @@ public abstract class EjbcaRestApiClient {
                 tm = tmf.getTrustManagers()[0];
 
                 sslContextBuilder.trustManager(tm);
+            } else {
+                sslContextBuilder.trustManager(InsecureTrustManagerFactory.INSTANCE);
             }
-
             return sslContextBuilder.protocols("TLSv1.2").build();
 
         } catch (Exception e) {
