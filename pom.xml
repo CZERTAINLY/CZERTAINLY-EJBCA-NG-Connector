@@ -17,7 +17,7 @@
     <name>CZERTAINLY-EJBCA-NG-Connector</name>
 
     <properties>
-        <java.version>11</java.version>
+        <java.version>17</java.version>
         <sonar.projectKey>3KeyCompany_CZERTAINLY-EJBCA-NG-Connector</sonar.projectKey>
     </properties>
 
