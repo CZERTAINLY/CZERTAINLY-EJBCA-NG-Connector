@@ -29,3 +29,7 @@ management:
       base-path: '/'
       exposure:
         include: health, info
+  endpoint:
+    health:
+      probes:
+        enabled: true
