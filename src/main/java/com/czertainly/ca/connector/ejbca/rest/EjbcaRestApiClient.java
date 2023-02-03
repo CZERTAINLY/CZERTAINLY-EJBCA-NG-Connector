@@ -6,6 +6,7 @@ import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
 import com.czertainly.api.model.common.attribute.v2.content.FileAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.SecretAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
+import com.czertainly.ca.connector.ejbca.config.TrustedCertificatesConfig;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.response.ExceptionErrorRestResponse;
 import com.czertainly.core.util.AttributeDefinitionUtils;
@@ -14,9 +15,11 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -34,7 +37,12 @@ import java.util.Base64;
 import java.util.List;
 import java.util.function.Function;
 
+@Component
 public abstract class EjbcaRestApiClient {
+
+    @Autowired
+    private TrustedCertificatesConfig trustedCertificatesConfig;
+
     // Certificate attribute names
     public static final String ATTRIBUTE_KEYSTORE_TYPE = "keyStoreType";
     public static final String ATTRIBUTE_KEYSTORE = "keyStore";
@@ -47,7 +55,7 @@ public abstract class EjbcaRestApiClient {
     };
     protected WebClient webClient;
 
-    public static SslContext createSslContext(List<BaseAttribute> attributes) {
+    public static SslContext createSslContext(List<BaseAttribute> attributes, TrustManager[] defaultTrustManagers) {
         try {
             SslContextBuilder sslContextBuilder = SslContextBuilder.forClient();
 
@@ -77,10 +85,12 @@ public abstract class EjbcaRestApiClient {
 
                 tmf.init(KeyStoreUtils.bytes2KeyStore(trustStoreBytes, trustStorePassword, trustStoreType));
                 tm = tmf.getTrustManagers()[0];
-
-                sslContextBuilder.trustManager(tm);
+            } else {
+                // return default TrustManager
+                tm = defaultTrustManagers[0];
             }
 
+            sslContextBuilder.trustManager(tm);
             return sslContextBuilder.protocols("TLSv1.2").build();
 
         } catch (Exception e) {
@@ -117,7 +127,7 @@ public abstract class EjbcaRestApiClient {
 
         WebClient.RequestBodySpec request;
 
-        SslContext sslContext = createSslContext(authAttributes);
+        SslContext sslContext = createSslContext(authAttributes, trustedCertificatesConfig.getDefaultTrustManagers());
         HttpClient httpClient = HttpClient.create().secure(t -> t.sslContext(sslContext));
         webClient.mutate().clientConnector(new ReactorClientHttpConnector(httpClient)).build();
 

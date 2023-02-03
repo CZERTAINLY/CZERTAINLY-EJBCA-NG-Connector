@@ -12,6 +12,7 @@ import com.czertainly.api.model.common.attribute.v2.content.data.CredentialAttri
 import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceDto;
 import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceRequestDto;
 import com.czertainly.ca.connector.ejbca.config.ApplicationConfig;
+import com.czertainly.ca.connector.ejbca.config.TrustedCertificatesConfig;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.rest.EjbcaRestApiClient;
@@ -71,6 +72,9 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
 
     @Autowired
     private AttributeService attributeService;
+
+    @Autowired
+    private TrustedCertificatesConfig trustedCertificatesConfig;
 
     @Override
     public List<AuthorityProviderInstanceDto> listAuthorityInstances() {
@@ -252,6 +256,9 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
 
                 tmf.init(KeyStoreUtils.bytes2KeyStore(trustStoreBytes, trustStorePassword, trustStoreType));
                 tm = tmf.getTrustManagers();
+            } else {
+                // return default TrustManagers
+                tm = trustedCertificatesConfig.getDefaultTrustManagers();
             }
 
             SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
@@ -319,7 +326,7 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
                 .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(size))
                 .build();
 
-        SslContext sslContext = EjbcaRestApiClient.createSslContext(attributes);
+        SslContext sslContext = EjbcaRestApiClient.createSslContext(attributes, trustedCertificatesConfig.getDefaultTrustManagers());
 
         HttpClient httpClient = HttpClient.create().secure(t -> t.sslContext(sslContext));
 
