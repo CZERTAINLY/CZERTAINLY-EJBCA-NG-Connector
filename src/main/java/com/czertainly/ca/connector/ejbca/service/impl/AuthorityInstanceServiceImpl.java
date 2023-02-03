@@ -12,6 +12,7 @@ import com.czertainly.api.model.common.attribute.v2.content.data.CredentialAttri
 import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceDto;
 import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceRequestDto;
 import com.czertainly.ca.connector.ejbca.config.ApplicationConfig;
+import com.czertainly.ca.connector.ejbca.config.TrustedCertificatesConfig;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.rest.EjbcaRestApiClient;
@@ -19,7 +20,6 @@ import com.czertainly.ca.connector.ejbca.service.AttributeService;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.ws.EjbcaWS;
 import com.czertainly.ca.connector.ejbca.ws.EjbcaWSService;
-import com.czertainly.config.TrustedCertificatesConfig;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import com.czertainly.core.util.KeyStoreUtils;
 import io.netty.handler.ssl.SslContext;
