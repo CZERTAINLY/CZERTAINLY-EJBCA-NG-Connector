@@ -92,6 +92,7 @@ EJBCA NG `Connector` is provided as a Docker container. Use the `docker pull har
 | `DB_SCHEMA`            | Database schema to use                              | ![](https://img.shields.io/badge/-NO-red.svg)      | `ejbca`       |
 | `PORT`                 | Port where the service is exposed                   | ![](https://img.shields.io/badge/-NO-red.svg)      | `8082`        |
 | `TRUSTED_CERTIFICATES` | List of PEM encoded additional trusted certificates | ![](https://img.shields.io/badge/-NO-red.svg)      | `N/A`         |
+| `REMOTE_DEBUG`         | Enables JVM remote debug on port 5005               | ![](https://img.shields.io/badge/-NO-red.svg)      | `false`       |
 
 ### Proxy settings
 

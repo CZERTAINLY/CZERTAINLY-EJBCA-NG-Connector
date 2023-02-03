@@ -19,6 +19,8 @@ COPY --from=build /home/app/target/*.jar /opt/czertainly/app.jar
 
 WORKDIR /opt/czertainly
 
+ENV REMOTE_DEBUG=false
+
 USER 10001
 
 ENTRYPOINT ["/opt/czertainly/entry.sh"]

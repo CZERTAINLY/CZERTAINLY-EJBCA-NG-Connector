@@ -12,6 +12,13 @@ source ${czertainlyHome}/static-functions
 #fi
 
 log "INFO" "Launching the Core"
-java -jar ./app.jar
+
+# Set debug options if required
+if [ x"${REMOTE_DEBUG}" != x ] && [ "${REMOTE_DEBUG}" != "false" ]
+then
+  java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -jar ./app.jar
+else
+  java -jar ./app.jar
+fi
 
 #exec "$@"
