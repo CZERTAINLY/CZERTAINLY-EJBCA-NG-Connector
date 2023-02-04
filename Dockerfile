@@ -14,6 +14,8 @@ FROM eclipse-temurin:17-jre-alpine
 # add non root user czertainly
 RUN addgroup --system --gid 10001 czertainly && adduser --system --home /opt/czertainly --uid 10001 --ingroup czertainly czertainly
 
+RUN mkdir /tmp/tomcat
+
 COPY --from=build /home/app/docker /
 COPY --from=build /home/app/target/*.jar /opt/czertainly/app.jar
 
