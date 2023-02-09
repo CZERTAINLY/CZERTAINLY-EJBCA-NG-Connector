@@ -4,9 +4,9 @@
 
 EJBCA NG `Connector` is the implementation of the following `Function Groups` and `Kinds`:
 
-| Function Group | Kind |
-| --- | --- |
-| `Authority Provider` | `EJBCA` |
+| Function Group       | Kind                      |
+|----------------------|---------------------------|
+| `Authority Provider` | `EJBCA`                   |
 | `Discovery Provider` | `EJBCA`, `EJBCA_SCHEDULE` |
 
 EJBCA NG `Connector` is the implementation of certificate management for EJBCA that is compatible with the v2 client operations interface. The `Connector` is developed to work with SOAP Web Services calls.
