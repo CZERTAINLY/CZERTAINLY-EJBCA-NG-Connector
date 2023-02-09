@@ -1,7 +1,8 @@
 package com.czertainly.ca.connector.ejbca.dao.entity;
 
+import com.czertainly.api.model.common.attribute.v2.MetadataAttribute;
 import com.czertainly.api.model.connector.discovery.DiscoveryProviderCertificateDataDto;
-import com.czertainly.ca.connector.ejbca.util.MetaDefinitions;
+import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
@@ -13,18 +14,18 @@ import java.io.Serializable;
 public class Certificate implements Serializable {
 
     @Id
-    @Column(name= "id")
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "discovery_certificate_seq")
     @SequenceGenerator(name = "discovery_certificate_seq", sequenceName = "discovery_certificate_id_seq", allocationSize = 1)
     private Long id;
 
-    @Column(name="uuid")
+    @Column(name = "uuid")
     private String uuid;
 
-    @Column(name="base64Content")
+    @Column(name = "base64Content")
     private String base64Content;
 
-    @Column(name="discoveryId")
+    @Column(name = "discoveryId")
     private Long discoveryId;
 
     @Column(name = "meta")
@@ -34,7 +35,7 @@ public class Certificate implements Serializable {
         DiscoveryProviderCertificateDataDto dto = new DiscoveryProviderCertificateDataDto();
         dto.setUuid(uuid);
         dto.setBase64Content(base64Content);
-        dto.setMeta(MetaDefinitions.deserialize(meta));
+        dto.setMeta(AttributeDefinitionUtils.deserialize(meta, MetadataAttribute.class));
         return dto;
     }
 

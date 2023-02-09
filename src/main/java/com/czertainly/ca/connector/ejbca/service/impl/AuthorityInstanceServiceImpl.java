@@ -4,13 +4,15 @@ import com.czertainly.api.exception.AlreadyExistException;
 import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.exception.ValidationError;
 import com.czertainly.api.exception.ValidationException;
-import com.czertainly.api.model.common.attribute.AttributeDefinition;
-import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
-import com.czertainly.api.model.common.attribute.content.FileAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
+import com.czertainly.api.model.common.attribute.v2.content.FileAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.SecretAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.data.CredentialAttributeContentData;
 import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceDto;
 import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceRequestDto;
-import com.czertainly.api.model.core.credential.CredentialDto;
 import com.czertainly.ca.connector.ejbca.config.ApplicationConfig;
+import com.czertainly.ca.connector.ejbca.config.TrustedCertificatesConfig;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.rest.EjbcaRestApiClient;
@@ -34,7 +36,12 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
-import javax.net.ssl.*;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import javax.xml.ws.BindingProvider;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -65,6 +72,9 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
 
     @Autowired
     private AttributeService attributeService;
+
+    @Autowired
+    private TrustedCertificatesConfig trustedCertificatesConfig;
 
     @Override
     public List<AuthorityProviderInstanceDto> listAuthorityInstances() {
@@ -98,11 +108,11 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
 
         AuthorityInstance instance = new AuthorityInstance();
         instance.setName(request.getName());
-        instance.setUrl(AttributeDefinitionUtils.getAttributeContentValue("url", request.getAttributes(), BaseAttributeContent.class));
+        instance.setUrl(AttributeDefinitionUtils.getSingleItemAttributeContentValue("url", request.getAttributes(), StringAttributeContent.class).getData());
         instance.setUuid(UUID.randomUUID().toString());
-        CredentialDto credential = AttributeDefinitionUtils.getCredentialContent("credential", request.getAttributes());
+        CredentialAttributeContentData credential = AttributeDefinitionUtils.getCredentialContent("credential", request.getAttributes());
         instance.setCredentialUuid(credential.getUuid());
-        instance.setCredentialData(AttributeDefinitionUtils.serialize(AttributeDefinitionUtils.responseAttributeConverter(credential.getAttributes())));
+        instance.setCredentialData(AttributeDefinitionUtils.serialize(credential.getAttributes()));
 
         instance.setAttributes(AttributeDefinitionUtils.serialize(AttributeDefinitionUtils.mergeAttributes(attributeService.getAttributes(request.getKind()), request.getAttributes())));
 
@@ -137,11 +147,11 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
         }
 
         instance.setName(request.getName());
-        instance.setUrl(AttributeDefinitionUtils.getAttributeContentValue("url", request.getAttributes(), BaseAttributeContent.class));
+        instance.setUrl(AttributeDefinitionUtils.getSingleItemAttributeContentValue("url", request.getAttributes(), StringAttributeContent.class).getData());
 
-        CredentialDto credential = AttributeDefinitionUtils.getCredentialContent("credential", request.getAttributes());
+        CredentialAttributeContentData credential = AttributeDefinitionUtils.getCredentialContent("credential", request.getAttributes());
         instance.setCredentialUuid(credential.getUuid());
-        instance.setCredentialData(AttributeDefinitionUtils.serialize(AttributeDefinitionUtils.responseAttributeConverter(credential.getAttributes())));
+        instance.setCredentialData(AttributeDefinitionUtils.serialize(credential.getAttributes()));
 
         instance.setAttributes(AttributeDefinitionUtils.serialize(AttributeDefinitionUtils.mergeAttributes(attributeService.getAttributes(request.getKind()), request.getAttributes())));
         EjbcaWS connection;
@@ -220,32 +230,35 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
 
     private SSLSocketFactory createSSLSocketFactory(AuthorityInstance instance) {
         try {
-            List<AttributeDefinition> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData());
+            List<BaseAttribute> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData(), BaseAttribute.class);
 
             KeyManager[] km = null;
-            String keyStoreData = AttributeDefinitionUtils.getAttributeContentValue("keyStore", attributes, FileAttributeContent.class);
-            if (keyStoreData != null && !keyStoreData.isEmpty()) {
+            FileAttributeContent keyStoreData = AttributeDefinitionUtils.getSingleItemAttributeContentValue("keyStore", attributes, FileAttributeContent.class);
+            if (keyStoreData != null && keyStoreData.getData() != null && keyStoreData.getData().getContent() != null && !keyStoreData.getData().getContent().isEmpty()) {
                 KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm()); //"SunX509"
 
-                String keyStoreType = AttributeDefinitionUtils.getAttributeContentValue("keyStoreType", attributes, BaseAttributeContent.class);
-                String keyStorePassword = AttributeDefinitionUtils.getAttributeContentValue("keyStorePassword", attributes, BaseAttributeContent.class);
-                byte[] keyStoreBytes = Base64.getDecoder().decode(keyStoreData);
+                String keyStoreType = AttributeDefinitionUtils.getSingleItemAttributeContentValue("keyStoreType", attributes, StringAttributeContent.class).getData();
+                String keyStorePassword = AttributeDefinitionUtils.getSingleItemAttributeContentValue("keyStorePassword", attributes, SecretAttributeContent.class).getData().getSecret();
+                byte[] keyStoreBytes = Base64.getDecoder().decode(keyStoreData.getData().getContent());
 
                 kmf.init(KeyStoreUtils.bytes2KeyStore(keyStoreBytes, keyStorePassword, keyStoreType), keyStorePassword.toCharArray());
                 km = kmf.getKeyManagers();
             }
 
             TrustManager[] tm = null;
-            String trustStoreData = AttributeDefinitionUtils.getAttributeContentValue("trustStore", attributes, FileAttributeContent.class);
-            if (trustStoreData != null && !trustStoreData.isEmpty()) {
+            FileAttributeContent trustStoreData = AttributeDefinitionUtils.getSingleItemAttributeContentValue("trustStore", attributes, FileAttributeContent.class);
+            if (trustStoreData != null && trustStoreData.getData() != null && trustStoreData.getData().getContent() != null && !trustStoreData.getData().getContent().isEmpty()) {
                 TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm()); //"SunX509"
 
-                String trustStoreType = AttributeDefinitionUtils.getAttributeContentValue("trustStoreType", attributes, BaseAttributeContent.class);
-                String trustStorePassword = AttributeDefinitionUtils.getAttributeContentValue("trustStorePassword", attributes, BaseAttributeContent.class);
-                byte[] trustStoreBytes = Base64.getDecoder().decode(trustStoreData);
+                String trustStoreType = AttributeDefinitionUtils.getSingleItemAttributeContentValue("trustStoreType", attributes, StringAttributeContent.class).getData();
+                String trustStorePassword = AttributeDefinitionUtils.getSingleItemAttributeContentValue("trustStorePassword", attributes, SecretAttributeContent.class).getData().getSecret();
+                byte[] trustStoreBytes = Base64.getDecoder().decode(trustStoreData.getData().getContent());
 
                 tmf.init(KeyStoreUtils.bytes2KeyStore(trustStoreBytes, trustStorePassword, trustStoreType));
                 tm = tmf.getTrustManagers();
+            } else {
+                // return default TrustManagers
+                tm = trustedCertificatesConfig.getDefaultTrustManagers();
             }
 
             SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
@@ -296,13 +309,14 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
             logger.error(e.getMessage());
         }
 
-        if(wsUrl == null) throw new ValidationException("Invalid or malformed authority instance URL. Authority instance UUID: " + authorityInstanceUuid);
+        if (wsUrl == null)
+            throw new ValidationException("Invalid or malformed authority instance URL. Authority instance UUID: " + authorityInstanceUuid);
 
         return "https://" + wsUrl.getHost() + (wsUrl.getPort() != -1 ? ":" + wsUrl.getPort() : "") + "/ejbca/ejbca-rest-api";
     }
 
     private WebClient createRestApiConnection(AuthorityInstance instance) {
-        List<AttributeDefinition> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData());
+        List<BaseAttribute> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData(), BaseAttribute.class);
 
         /**
          * 1 certificate in response ~ 2000 bytes * 1000 = 2000000
@@ -312,7 +326,7 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
                 .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(size))
                 .build();
 
-        SslContext sslContext = EjbcaRestApiClient.createSslContext(attributes);
+        SslContext sslContext = EjbcaRestApiClient.createSslContext(attributes, trustedCertificatesConfig.getDefaultTrustManagers());
 
         HttpClient httpClient = HttpClient.create().secure(t -> t.sslContext(sslContext));
 

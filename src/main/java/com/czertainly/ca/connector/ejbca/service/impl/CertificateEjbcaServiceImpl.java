@@ -1,7 +1,11 @@
 package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.exception.NotFoundException;
-import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.AttributeType;
+import com.czertainly.api.model.common.attribute.v2.MetadataAttribute;
+import com.czertainly.api.model.common.attribute.v2.content.AttributeContentType;
+import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.properties.MetadataAttributeProperties;
 import com.czertainly.api.model.connector.v2.CertRevocationDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.api.model.connector.v2.CertificateRenewRequestDto;
@@ -13,7 +17,6 @@ import com.czertainly.ca.connector.ejbca.service.CertificateEjbcaService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
 import com.czertainly.ca.connector.ejbca.util.CertificateUtil;
 import com.czertainly.ca.connector.ejbca.util.CsrUtil;
-import com.czertainly.ca.connector.ejbca.util.MetaDefinitions;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
@@ -30,35 +33,34 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
 public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
 
-    private static final Logger logger = LoggerFactory.getLogger(CertificateEjbcaServiceImpl.class);
-
-    private final String COMMON_NAME = "2.5.4.3";
-    public final String META_EJBCA_USERNAME = "ejbcaUsername";
     public static final String META_EMAIL = "email";
     public static final String META_SAN = "san";
     public static final String META_EXTENSION = "extension";
+    private static final Logger logger = LoggerFactory.getLogger(CertificateEjbcaServiceImpl.class);
+    public final String META_EJBCA_USERNAME = "ejbcaUsername";
+    private final String COMMON_NAME = "2.5.4.3";
+    private EjbcaService ejbcaService;
 
     @Autowired
     public void setEjbcaService(EjbcaService ejbcaService) {
         this.ejbcaService = ejbcaService;
     }
 
-    private EjbcaService ejbcaService;
-
     @Override
     public CertificateDataResponseDto issueCertificate(String uuid, CertificateSignRequestDto request) throws Exception {
         // generate username based on the request
-        String usernameGenMethod = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD, request.getRaProfileAttributes(), BaseAttributeContent.class);
-        String usernamePrefix = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX, request.getRaProfileAttributes(), BaseAttributeContent.class);
-        String usernamePostfix = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX, request.getRaProfileAttributes(), BaseAttributeContent.class);
+        String usernameGenMethod = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
+        String usernamePrefix = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
+        String usernamePostfix = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
 
         JcaPKCS10CertificationRequest csr = parseCsrToJcaObject(request.getPkcs10());
 
@@ -71,13 +73,12 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         // issue certificate
         CertificateDataResponseDto certificate = ejbcaService.issueCertificate(uuid, username, password, Base64.getEncoder().encodeToString(csr.getEncoded()));
 
-        Map<String, Object> meta = new LinkedHashMap<>();
-        meta.put(META_EJBCA_USERNAME, username);
-        meta.put(META_EMAIL, AttributeDefinitionUtils.getAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EMAIL, request.getRaProfileAttributes(), BaseAttributeContent.class));
-        meta.put(META_SAN, AttributeDefinitionUtils.getAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_SAN, request.getRaProfileAttributes(), BaseAttributeContent.class));
-        meta.put(META_EXTENSION, AttributeDefinitionUtils.getAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EXTENSION, request.getRaProfileAttributes(), BaseAttributeContent.class));
-
-        certificate.setMeta(MetaDefinitions.serialize(meta));
+        certificate.setMeta(getIssueMetadata(
+                username,
+                AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EMAIL, request.getRaProfileAttributes(), StringAttributeContent.class).getData(),
+                AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_SAN, request.getRaProfileAttributes(), StringAttributeContent.class).getData(),
+                AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EXTENSION, request.getRaProfileAttributes(), StringAttributeContent.class).getData()
+        ));
 
         return certificate;
     }
@@ -86,17 +87,17 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
     public CertificateDataResponseDto renewCertificate(String uuid, CertificateRenewRequestDto request) throws Exception {
         JcaPKCS10CertificationRequest csr = parseCsrToJcaObject(request.getPkcs10());
 
-        Map<String, Object> metadata = MetaDefinitions.deserialize(request.getMeta());
+        List<MetadataAttribute> metadata = request.getMeta();
 
         // check if we have the username in the metadata, and if not, generate username
         String username = null;
         if (!request.getMeta().isEmpty()) {
-            username = (String) metadata.get(META_EJBCA_USERNAME);
+            username = AttributeDefinitionUtils.getSingleItemAttributeContentValue(META_EJBCA_USERNAME, metadata, StringAttributeContent.class).getData();
         }
         if (StringUtils.isBlank(username)) {
-            String usernameGenMethod = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD, request.getRaProfileAttributes(), BaseAttributeContent.class);
-            String usernamePrefix = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX, request.getRaProfileAttributes(), BaseAttributeContent.class);
-            String usernamePostfix = AttributeDefinitionUtils.getAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX, request.getRaProfileAttributes(), BaseAttributeContent.class);
+            String usernameGenMethod = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
+            String usernamePrefix = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
+            String usernamePostfix = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
             username = generateUsername(usernameGenMethod, usernamePrefix, usernamePostfix, csr);
         }
 
@@ -107,19 +108,96 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
             ejbcaService.renewEndEntity(uuid, username, password);
         } catch (NotFoundException e) {
             String subjectDn = csr.getSubject().toString();
-            ejbcaService.createEndEntity(uuid, username, password, subjectDn, request.getRaProfileAttributes(), metadata);
+            ejbcaService.createEndEntityWithMeta(uuid, username, password, subjectDn, request.getRaProfileAttributes(), metadata);
         }
 
         // issue certificate
         CertificateDataResponseDto certificate = ejbcaService.issueCertificate(uuid, username, password, Base64.getEncoder().encodeToString(csr.getEncoded()));
 
-        Map<String, Object> meta = new LinkedHashMap<>();
-        meta.putAll(metadata);
-        meta.put(META_EJBCA_USERNAME, username); // the username must be as a last one, in order to not overwrite the metadata value
-
-        certificate.setMeta(MetaDefinitions.serialize(meta));
+        List<MetadataAttribute> meta = new ArrayList<>();
+        meta.addAll(metadata.stream().filter(e -> !e.getName().equals(META_EJBCA_USERNAME)).collect(Collectors.toList()));
+        meta.addAll(getUsernameMetadata(username));
+        certificate.setMeta(meta);
 
         return certificate;
+    }
+
+    private List<MetadataAttribute> getUsernameMetadata(String username) {
+        List<MetadataAttribute> attributes = new ArrayList<>();
+
+        // Username
+        MetadataAttribute attribute = new MetadataAttribute();
+        attribute.setUuid("b42ab690-60fd-11ed-9b6a-0242ac120002");
+        attribute.setName(META_EJBCA_USERNAME);
+        attribute.setDescription("EJBCA Username");
+        attribute.setType(AttributeType.META);
+        attribute.setContentType(AttributeContentType.STRING);
+        attribute.setContent(List.of(new StringAttributeContent(username)));
+
+        MetadataAttributeProperties attributeProperties = new MetadataAttributeProperties();
+        attributeProperties.setVisible(true);
+        attributeProperties.setLabel("EJBCA Username");
+        attribute.setProperties(attributeProperties);
+
+        attributes.add(attribute);
+        return attributes;
+    }
+
+    private List<MetadataAttribute> getIssueMetadata(String username, String email, String san, String extensions) {
+        List<MetadataAttribute> attributes = new ArrayList<>();
+
+        // Username
+        attributes.addAll(getUsernameMetadata(username));
+
+        // EMAIL
+        MetadataAttribute emailAttribute = new MetadataAttribute();
+        emailAttribute.setUuid("b42ab942-60fd-11ed-9b6a-0242ac120002");
+        emailAttribute.setName(META_EMAIL);
+        emailAttribute.setDescription("Email");
+        emailAttribute.setType(AttributeType.META);
+        emailAttribute.setContentType(AttributeContentType.STRING);
+        emailAttribute.setContent(List.of(new StringAttributeContent(email)));
+
+        MetadataAttributeProperties emailAttributeProperties = new MetadataAttributeProperties();
+        emailAttributeProperties.setVisible(true);
+        emailAttributeProperties.setLabel("Email");
+        emailAttribute.setProperties(emailAttributeProperties);
+
+        attributes.add(emailAttribute);
+
+        // SAN Attribute
+        MetadataAttribute sanAttribute = new MetadataAttribute();
+        sanAttribute.setUuid("b42abc58-60fd-11ed-9b6a-0242ac120002");
+        sanAttribute.setName(META_SAN);
+        sanAttribute.setDescription("SAN");
+        sanAttribute.setType(AttributeType.META);
+        sanAttribute.setContentType(AttributeContentType.STRING);
+        sanAttribute.setContent(List.of(new StringAttributeContent(san)));
+
+        MetadataAttributeProperties sanAttributeProperties = new MetadataAttributeProperties();
+        sanAttributeProperties.setVisible(true);
+        sanAttributeProperties.setLabel("SAN");
+        sanAttribute.setProperties(sanAttributeProperties);
+
+        attributes.add(sanAttribute);
+
+        //Extension
+        MetadataAttribute extensionAttribute = new MetadataAttribute();
+        extensionAttribute.setUuid("b42abe38-60fd-11ed-9b6a-0242ac120002");
+        extensionAttribute.setName(META_EXTENSION);
+        extensionAttribute.setDescription("Extension");
+        extensionAttribute.setType(AttributeType.META);
+        extensionAttribute.setContentType(AttributeContentType.STRING);
+        extensionAttribute.setContent(List.of(new StringAttributeContent(extensions)));
+
+        MetadataAttributeProperties extensionAttributeProperties = new MetadataAttributeProperties();
+        extensionAttributeProperties.setVisible(true);
+        extensionAttributeProperties.setLabel("Extension");
+        extensionAttribute.setProperties(extensionAttributeProperties);
+
+        attributes.add(extensionAttribute);
+
+        return attributes;
     }
 
     private JcaPKCS10CertificationRequest parseCsrToJcaObject(String pkcs10) throws IOException {

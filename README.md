@@ -1,15 +1,15 @@
 # CZERTAINLY EJBCA NG Connector
 
-> This repository is part of the commercial open-source project CZERTAINLY, but the connector is available under subscription. You can find more information about the project at [CZERTAINLY](https://github.com/3KeyCompany/CZERTAINLY) repository, including the contribution guide.
+> This repository is part of the commercial open-source project CZERTAINLY. You can find more information about the project at [CZERTAINLY](https://github.com/3KeyCompany/CZERTAINLY) repository, including the contribution guide.
 
 EJBCA NG `Connector` is the implementation of the following `Function Groups` and `Kinds`:
 
-| Function Group | Kind |
-| --- | --- |
-| `Authority Provider` | `EJBCA` |
+| Function Group       | Kind                      |
+|----------------------|---------------------------|
+| `Authority Provider` | `EJBCA`                   |
 | `Discovery Provider` | `EJBCA`, `EJBCA_SCHEDULE` |
 
-EJBCA NG `Connector` is the implementation of certificate management for EJBCA that is compatible with the v2 client operations interafce. The `Connector` is developed to work with SOAP Web Services calls.
+EJBCA NG `Connector` is the implementation of certificate management for EJBCA that is compatible with the v2 client operations interface. The `Connector` is developed to work with SOAP Web Services calls.
 
 > It is expected that the REST API calls will be implemented as option in the future release, because of some limitations of the EJBCA Web Service, for example limiting the number of end entities and certificates, that can be fetched.
 
@@ -84,32 +84,28 @@ For more information, please refer to the [CZERTAINLY documentation](https://doc
 
 EJBCA NG `Connector` is provided as a Docker container. Use the `docker pull harbor.3key.company/czertainly/czertainly-ejbca-ng-connector:tagname` to pull the required image from the repository. It can be configured using the following environment variables:
 
-| Variable        | Description                       | Required | Default value |
-|-----------------|-----------------------------------|----------|---------------|
-| `JDBC_URL`      | JDBC URL for database access      | Yes      | N/A           |
-| `JDBC_USERNAME` | Username to access the database   | Yes      | N/A           |
-| `JDBC_PASSWORD` | Password to access the database   | Yes      | N/A           |
-| `DB_SCHEMA`     | Database schema to use            | No       | ejbca         |
-| `PORT`          | Port where the service is exposed | No       | 8082          |
+| Variable               | Description                                         | Required                                           | Default value |
+|------------------------|-----------------------------------------------------|----------------------------------------------------|---------------|
+| `JDBC_URL`             | JDBC URL for database access                        | ![](https://img.shields.io/badge/-YES-success.svg) | `N/A`         |
+| `JDBC_USERNAME`        | Username to access the database                     | ![](https://img.shields.io/badge/-YES-success.svg) | `N/A`         |
+| `JDBC_PASSWORD`        | Password to access the database                     | ![](https://img.shields.io/badge/-YES-success.svg) | `N/A`         |
+| `DB_SCHEMA`            | Database schema to use                              | ![](https://img.shields.io/badge/-NO-red.svg)      | `ejbca`       |
+| `PORT`                 | Port where the service is exposed                   | ![](https://img.shields.io/badge/-NO-red.svg)      | `8082`        |
+| `TRUSTED_CERTIFICATES` | List of PEM encoded additional trusted certificates | ![](https://img.shields.io/badge/-NO-red.svg)      | `N/A`         |
+| `REMOTE_DEBUG`         | Enables JVM remote debug on port 5005               | ![](https://img.shields.io/badge/-NO-red.svg)      | `false`       |
 
 ### Proxy settings
 
 You may need to configure proxy to allow communication with external systems.
 To enable proxy, use the following environment variables:
 
-| Variable      | Description                                                                                                                                                | Required | Default value |
-|---------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|---------------|
-| `HTTP_PROXY`  | The proxy URL to use for http connections. Format: `<protocol>://<proxy_host>:<proxy_port>` or `<protocol>://<user>:<password>@<proxy_host>:<proxy_port>`  | No       | N/A           |
-| `HTTPS_PROXY` | The proxy URL to use for https connections. Format: `<protocol>://<proxy_host>:<proxy_port>` or `<protocol>://<user>:<password>@<proxy_host>:<proxy_port>` | No       | N/A           |
-| `NO_PROXY`    | A comma-separated list of host names that shouldn't go through any proxy                                                                                   | No       | N/A           |
+| Variable      | Description                                                                                                                                                | Required                                      | Default value |
+|---------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|---------------|
+| `HTTP_PROXY`  | The proxy URL to use for http connections. Format: `<protocol>://<proxy_host>:<proxy_port>` or `<protocol>://<user>:<password>@<proxy_host>:<proxy_port>`  | ![](https://img.shields.io/badge/-NO-red.svg) | `N/A`         |
+| `HTTPS_PROXY` | The proxy URL to use for https connections. Format: `<protocol>://<proxy_host>:<proxy_port>` or `<protocol>://<user>:<password>@<proxy_host>:<proxy_port>` | ![](https://img.shields.io/badge/-NO-red.svg) | `N/A`         |
+| `NO_PROXY`    | A comma-separated list of host names that shouldn't go through any proxy                                                                                   | ![](https://img.shields.io/badge/-NO-red.svg) | `N/A`         |
 
 Example values:
 - `HTTP_PROXY=http://user:password@proxy.example.com:3128`
 - `HTTPS_PROXY=http://user:password@proxy.example.com:3128`
 - `NO_PROXY=localhost,127.0.0.1,0.0.0.0,10.0.0.0/8,cattle-system.svc,.svc,.cluster.local,my-domain.local`
-
-### Additional trusted certificates
-
-You can inject additional trusted certificates into the container, for example, when your EJBCA is using your internally trusted certificates. To trust additional certificates, you need to map a single file with PEM certificates that should be trusted into `/opt/czertainly/trusted-certificates.pem`.
-
-No worries, you can always change the list of trusted certificates in the future.

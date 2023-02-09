@@ -2,9 +2,11 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.exception.AlreadyExistException;
 import com.czertainly.api.exception.NotFoundException;
+import com.czertainly.api.model.client.attribute.RequestAttributeDto;
 import com.czertainly.api.model.common.NameAndIdDto;
-import com.czertainly.api.model.common.attribute.RequestAttributeDto;
-import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.MetadataAttribute;
+import com.czertainly.api.model.common.attribute.v2.content.BooleanAttributeContent;
+import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.ca.connector.ejbca.EjbcaException;
 import com.czertainly.ca.connector.ejbca.api.CertificateControllerImpl;
@@ -28,22 +30,24 @@ import org.springframework.web.reactive.function.client.WebClient;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.*;
+import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_CERTIFICATE_PROFILE;
+import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_CERTIFICATION_AUTHORITY;
+import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_END_ENTITY_PROFILE;
 import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_KEY_RECOVERABLE;
+import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.ATTRIBUTE_SEND_NOTIFICATIONS;
 
 @Service
 @Transactional
 public class EjbcaServiceImpl implements EjbcaService {
 
+    private AuthorityInstanceService authorityInstanceService;
+
     @Autowired
     public void setAuthorityInstanceService(AuthorityInstanceService authorityInstanceService) {
         this.authorityInstanceService = authorityInstanceService;
     }
-
-    private AuthorityInstanceService authorityInstanceService;
 
     @Override
     public void createEndEntity(String authorityUuid, String username, String password, String subjectDn, List<RequestAttributeDto> raProfileAttributes, List<RequestAttributeDto> issueAttributes) throws NotFoundException, AlreadyExistException, EjbcaException {
@@ -73,7 +77,7 @@ public class EjbcaServiceImpl implements EjbcaService {
     }
 
     @Override
-    public void createEndEntity(String authorityUuid, String username, String password, String subjectDn, List<RequestAttributeDto> raProfileAttributes, Map<String, Object> metadata) throws NotFoundException, AlreadyExistException {
+    public void createEndEntityWithMeta(String authorityUuid, String username, String password, String subjectDn, List<RequestAttributeDto> raProfileAttributes, List<MetadataAttribute> metadata) throws NotFoundException, AlreadyExistException {
         EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityUuid);
 
         if (getUser(ejbcaWS, username) != null) {
@@ -84,7 +88,7 @@ public class EjbcaServiceImpl implements EjbcaService {
         user.setUsername(username);
         user.setPassword(password);
         user.setSubjectDN(subjectDn);
-        prepareEndEntity(user, raProfileAttributes, metadata);
+        prepareEndEntityWithMeta(user, raProfileAttributes, metadata);
 
         try {
             ejbcaWS.editUser(user);
@@ -169,7 +173,7 @@ public class EjbcaServiceImpl implements EjbcaService {
 
     @Override
     public SearchCertificatesRestResponseV2 searchCertificates(String authorityInstanceUuid, String restUrl, SearchCertificatesRestRequestV2 request) throws Exception {
-       WebClient ejbcaWC = authorityInstanceService.getRestApiConnection(authorityInstanceUuid);
+        WebClient ejbcaWC = authorityInstanceService.getRestApiConnection(authorityInstanceUuid);
         try {
             return ejbcaWC.post()
                     .uri(restUrl + "/v2/certificate/search")
@@ -178,9 +182,9 @@ public class EjbcaServiceImpl implements EjbcaService {
                     .retrieve()
                     .bodyToMono(SearchCertificatesRestResponseV2.class)
                     .block();
-        } catch (UnsupportedMediaTypeException e){
+        } catch (UnsupportedMediaTypeException e) {
             throw new Exception("Failed to communicate to EJBCA using REST API");
-        } catch (Exception e){
+        } catch (Exception e) {
             throw new Exception(e.getMessage());
         }
     }
@@ -219,34 +223,34 @@ public class EjbcaServiceImpl implements EjbcaService {
     private void prepareEndEntity(UserDataVOWS user, List<RequestAttributeDto> raProfileAttrs, List<RequestAttributeDto> issueAttrs) {
         setUserProfiles(user, raProfileAttrs);
 
-        String email = AttributeDefinitionUtils.getAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EMAIL, issueAttrs, BaseAttributeContent.class);
+        String email = AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EMAIL, issueAttrs, StringAttributeContent.class).getData();
         if (StringUtils.isNotBlank(email)) {
             user.setEmail(email);
         }
 
-        String san = AttributeDefinitionUtils.getAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_SAN, issueAttrs, BaseAttributeContent.class);
+        String san = AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_SAN, issueAttrs, StringAttributeContent.class).getData();
         if (StringUtils.isNotBlank(san)) {
             user.setSubjectAltName(san);
         }
 
-        String extension = AttributeDefinitionUtils.getAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EXTENSION, issueAttrs, BaseAttributeContent.class);
+        String extension = AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EXTENSION, issueAttrs, StringAttributeContent.class).getData();
         setUserExtensions(user, extension);
     }
 
-    private void prepareEndEntity(UserDataVOWS user, List<RequestAttributeDto> raProfileAttrs, Map<String, Object> metadata) {
+    private void prepareEndEntityWithMeta(UserDataVOWS user, List<RequestAttributeDto> raProfileAttrs, List<MetadataAttribute> metadata) {
         setUserProfiles(user, raProfileAttrs);
 
-        String email = (String) metadata.get(CertificateEjbcaServiceImpl.META_EMAIL);
+        String email = AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateEjbcaServiceImpl.META_EMAIL, metadata, StringAttributeContent.class).getData();
         if (StringUtils.isNotBlank(email)) {
             user.setEmail(email);
         }
 
-        String san = (String) metadata.get(CertificateEjbcaServiceImpl.META_SAN);
+        String san = AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateEjbcaServiceImpl.META_SAN, metadata, StringAttributeContent.class).getData();
         if (StringUtils.isNotBlank(san)) {
             user.setSubjectAltName(san);
         }
 
-        String extension = (String) metadata.get(CertificateEjbcaServiceImpl.META_EXTENSION);
+        String extension = AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateEjbcaServiceImpl.META_EXTENSION, metadata, StringAttributeContent.class).getData();
         setUserExtensions(user, extension);
     }
 
@@ -265,14 +269,14 @@ public class EjbcaServiceImpl implements EjbcaService {
         user.setCaName(ca.getName());
 
         boolean sendNotifications = false;
-        Boolean value = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs, BaseAttributeContent.class);
+        Boolean value = AttributeDefinitionUtils.getSingleItemAttributeContentValue(ATTRIBUTE_SEND_NOTIFICATIONS, raProfileAttrs, BooleanAttributeContent.class).getData();
         if (value != null) {
             sendNotifications = value;
         }
         user.setSendNotification(sendNotifications);
 
         boolean keyRecoverable = false;
-        value = AttributeDefinitionUtils.getAttributeContentValue(ATTRIBUTE_KEY_RECOVERABLE, raProfileAttrs, BaseAttributeContent.class);
+        value = AttributeDefinitionUtils.getSingleItemAttributeContentValue(ATTRIBUTE_KEY_RECOVERABLE, raProfileAttrs, BooleanAttributeContent.class).getData();
         if (value != null) {
             keyRecoverable = value;
         }

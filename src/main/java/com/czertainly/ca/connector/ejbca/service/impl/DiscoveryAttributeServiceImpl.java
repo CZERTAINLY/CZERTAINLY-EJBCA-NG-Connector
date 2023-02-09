@@ -2,9 +2,14 @@ package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.exception.ValidationError;
 import com.czertainly.api.exception.ValidationException;
-import com.czertainly.api.model.common.attribute.*;
-import com.czertainly.api.model.common.attribute.content.BaseAttributeContent;
-import com.czertainly.api.model.common.attribute.content.JsonAttributeContent;
+import com.czertainly.api.model.client.attribute.RequestAttributeDto;
+import com.czertainly.api.model.common.attribute.v2.*;
+import com.czertainly.api.model.common.attribute.v2.callback.AttributeCallback;
+import com.czertainly.api.model.common.attribute.v2.callback.AttributeCallbackMapping;
+import com.czertainly.api.model.common.attribute.v2.callback.AttributeValueTarget;
+import com.czertainly.api.model.common.attribute.v2.content.*;
+import com.czertainly.api.model.common.attribute.v2.properties.DataAttributeProperties;
+import com.czertainly.api.model.common.attribute.v2.properties.InfoAttributeProperties;
 import com.czertainly.ca.connector.ejbca.dao.AuthorityInstanceRepository;
 import com.czertainly.ca.connector.ejbca.dao.entity.AuthorityInstance;
 import com.czertainly.ca.connector.ejbca.dto.AuthorityInstanceNameAndUuidDto;
@@ -12,21 +17,19 @@ import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificateCrit
 import com.czertainly.ca.connector.ejbca.enums.DiscoveryKind;
 import com.czertainly.ca.connector.ejbca.service.DiscoveryAttributeService;
 import com.czertainly.core.util.AttributeDefinitionUtils;
+import net.steppschuh.markdowngenerator.list.UnorderedList;
+import net.steppschuh.markdowngenerator.text.Text;
+import net.steppschuh.markdowngenerator.text.heading.Heading;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService {
-
-    private static final Logger logger = LoggerFactory.getLogger(DiscoveryAttributeServiceImpl.class);
 
     public static final String ATTRIBUTE_EJBCA_INSTANCE = "ejbcaInstance";
     public static final String ATTRIBUTE_END_ENTITY_PROFILE = "endEntityProfile";
@@ -35,8 +38,6 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
     public static final String ATTRIBUTE_EJBCA_STATUS = "status";
     public static final String ATTRIBUTE_EJBCA_ISSUED_AFTER = "issuedAfter";
     public static final String ATTRIBUTE_ISSUED_DAYS_BEFORE = "issuedDaysBefore";
-
-
     public static final String ATTRIBUTE_EJBCA_INSTANCE_LABEL = "EJBCA instance";
     public static final String ATTRIBUTE_END_ENTITY_PROFILE_LABEL = "End Entity Profile";
     public static final String ATTRIBUTE_EJBCA_RESTAPI_URL_LABEL = "EJBCA REST API base URL";
@@ -45,35 +46,30 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
     public static final String ATTRIBUTE_EJBCA_ISSUED_AFTER_LABEL = "Certificates issued after";
     public static final String ATTRIBUTE_ISSUED_DAYS_BEFORE_LABEL = "Number of days";
 
+    public static final String ATTRIBUTE_GROUP_DISCOVERY_CONF = "discoveryConfiguration";
+    public static final String ATTRIBUTE_GROUP_DISCOVERY_CONF_LABEL = "Discovery configuration";
+
+    private static final Logger logger = LoggerFactory.getLogger(DiscoveryAttributeServiceImpl.class);
+
+    private AuthorityInstanceRepository authorityInstanceRepository;
+
 
     @Autowired
     public void setAuthorityInstanceRepository(AuthorityInstanceRepository authorityInstanceRepository) {
         this.authorityInstanceRepository = authorityInstanceRepository;
     }
 
-    private AuthorityInstanceRepository authorityInstanceRepository;
-
     @Override
-    public List<AttributeDefinition> getAttributes(String kind) {
+    public List<BaseAttribute> getAttributes(String kind) {
         if (!kind.equals(DiscoveryKind.EJBCA.name()) && !kind.equals(DiscoveryKind.EJBCA_SCHEDULE.name())) {
             throw new ValidationException("Unsupported kind: " + kind, new ValidationError("Unsupported kind: " + kind));
         }
         logger.info("Listing discovery attributes for {}", kind);
 
-        List<AttributeDefinition> attributes = new ArrayList<>();
+        List<BaseAttribute> attributes = new ArrayList<>();
+        attributes.add(infoDiscoveryDescription());
         attributes.add(prepareEjbcaInstanceAttribute());
-        attributes.add(ejbcaRestApiUrl());
-        attributes.add(listCas());
-        attributes.add(listEndEntityProfiles());
-        attributes.add(listStatus());
-
-        if (kind.equals(DiscoveryKind.EJBCA.name())) {
-            attributes.add(issuedAfter());
-        }
-
-        if (kind.equals(DiscoveryKind.EJBCA_SCHEDULE.name())) {
-            attributes.add(issuedDaysBefore());
-        }
+        attributes.add(discoveryConfiguration(kind));
 
         return attributes;
     }
@@ -93,46 +89,108 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         return true;
     }
 
-    private AttributeDefinition prepareEjbcaInstanceAttribute() {
+    @Override
+    public List<BaseAttribute> getInstanceAndKindAttributes(
+            String kind,
+            List<BaseAttributeContent> eeProfilesContent,
+            List<BaseAttributeContent> casContent,
+            List<BaseAttributeContent> urlContent
+    ) {
+        List<BaseAttribute> attributes = new ArrayList<>();
+
+        attributes.add(ejbcaRestApiUrlWithContent(urlContent));
+        attributes.add(listCasWithContent(casContent));
+        attributes.add(listEndEntityProfilesWithContent(eeProfilesContent));
+        attributes.add(listStatus());
+
+        if (kind.equals(DiscoveryKind.EJBCA.name())) {
+            attributes.add(issuedAfter());
+        }
+
+        if (kind.equals(DiscoveryKind.EJBCA_SCHEDULE.name())) {
+            attributes.add(issuedDaysBefore());
+        }
+
+        return attributes;
+    }
+
+    private DataAttribute prepareEjbcaInstanceAttribute() {
         List<AuthorityInstanceNameAndUuidDto> instanceNames = authorityInstanceRepository.findAll().stream().map(AuthorityInstance::mapToNameAndUuidDto).collect(Collectors.toList());
-        List<JsonAttributeContent> contentList = new ArrayList<>();
+        List<BaseAttributeContent> contentList = new ArrayList<>();
         for (AuthorityInstanceNameAndUuidDto instance : instanceNames) {
-            JsonAttributeContent content = new JsonAttributeContent(instance.getName(), instance);
+            ObjectAttributeContent content = new ObjectAttributeContent(instance.getName(), instance);
             contentList.add(content);
         }
 
-        AttributeDefinition attribute = new AttributeDefinition();
+        DataAttribute attribute = new DataAttribute();
         attribute.setUuid("dce22e96-3335-4181-b90c-c7f887d8d109");
         attribute.setName(ATTRIBUTE_EJBCA_INSTANCE);
-        attribute.setLabel(ATTRIBUTE_EJBCA_INSTANCE_LABEL);
+        attribute.setContentType(AttributeContentType.OBJECT);
         attribute.setDescription("The EJBCA instance where Discovery process should search for Certificates");
-        attribute.setType(AttributeType.JSON);
-        attribute.setRequired(true);
-        attribute.setReadOnly(false);
-        attribute.setVisible(true);
-        attribute.setList(true);
-        attribute.setMultiSelect(false);
+        attribute.setType(AttributeType.DATA);
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
+        attributeProperties.setLabel(ATTRIBUTE_EJBCA_INSTANCE_LABEL);
+        attributeProperties.setRequired(true);
+        attributeProperties.setReadOnly(false);
+        attributeProperties.setVisible(true);
+        attributeProperties.setList(true);
+        attributeProperties.setMultiSelect(false);
+        attribute.setProperties(attributeProperties);
         attribute.setContent(contentList);
 
         return attribute;
     }
 
-    private AttributeDefinition listCas() {
-        AttributeDefinition attribute = new AttributeDefinition();
+    private GroupAttribute discoveryConfiguration(String kind) {
+        // create group attribute
+        GroupAttribute attribute = new GroupAttribute();
+        attribute.setUuid("dce22e96-3335-4181-b90c-c7f887d8d109");
+        attribute.setName(ATTRIBUTE_GROUP_DISCOVERY_CONF);
+        attribute.setType(AttributeType.GROUP);
+        attribute.setDescription(ATTRIBUTE_GROUP_DISCOVERY_CONF_LABEL);
+
+        // prepare mappings for callback
+        Set<AttributeCallbackMapping> mappings = new HashSet<>();
+        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE + ".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
+        mappings.add(new AttributeCallbackMapping("kind", AttributeValueTarget.PATH_VARIABLE, kind));
+
+        // create attribute callback
+        AttributeCallback attributeCallback = new AttributeCallback();
+        attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/{kind}/configuration");
+        attributeCallback.setCallbackMethod("GET");
+        attributeCallback.setMappings(mappings);
+
+        // set attribute callback
+        attribute.setAttributeCallback(attributeCallback);
+
+        return attribute;
+    }
+
+    private DataAttribute listCasAttributeBase() {
+        DataAttribute attribute = new DataAttribute();
         attribute.setUuid("ffe7c27a-48e4-41fa-93de-8ddac65fec46");
         attribute.setName(ATTRIBUTE_EJBCA_CA);
-        attribute.setLabel(ATTRIBUTE_EJBCA_CA_LABEL);
         attribute.setDescription("Available certification authorities for Discovery");
-        attribute.setType(AttributeType.JSON);
-        attribute.setRequired(false);
-        attribute.setReadOnly(false);
-        attribute.setVisible(true);
-        attribute.setList(true);
-        attribute.setMultiSelect(true);
+        attribute.setContentType(AttributeContentType.OBJECT);
+        attribute.setType(AttributeType.DATA);
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
+        attributeProperties.setLabel(ATTRIBUTE_EJBCA_CA_LABEL);
+        attributeProperties.setRequired(false);
+        attributeProperties.setReadOnly(false);
+        attributeProperties.setVisible(true);
+        attributeProperties.setList(true);
+        attributeProperties.setMultiSelect(true);
+        attribute.setProperties(attributeProperties);
         attribute.setContent(List.of());
 
+        return attribute;
+    }
+
+    private DataAttribute listCas() {
+        DataAttribute attribute = listCasAttributeBase();
+
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
-        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE+".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
+        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE + ".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
 
         AttributeCallback attributeCallback = new AttributeCallback();
         attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/listCas");
@@ -144,22 +202,39 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         return attribute;
     }
 
-    private AttributeDefinition listEndEntityProfiles() {
-        AttributeDefinition attribute = new AttributeDefinition();
+    private DataAttribute listCasWithContent(List<BaseAttributeContent> casContent) {
+        DataAttribute attribute = listCasAttributeBase();
+
+        attribute.setContent(casContent);
+
+        return attribute;
+    }
+
+    private DataAttribute listEndEntityProfilesAttributeBase() {
+        DataAttribute attribute = new DataAttribute();
         attribute.setUuid("bbf2d142-f35a-437f-81c7-35c128881fc0");
         attribute.setName(ATTRIBUTE_END_ENTITY_PROFILE);
-        attribute.setLabel(ATTRIBUTE_END_ENTITY_PROFILE_LABEL);
         attribute.setDescription("The End Entity Profile where Discovery process should search for Certificates");
-        attribute.setType(AttributeType.JSON);
-        attribute.setRequired(false);
-        attribute.setReadOnly(false);
-        attribute.setVisible(true);
-        attribute.setList(true);
-        attribute.setMultiSelect(true);
+        attribute.setType(AttributeType.DATA);
+        attribute.setContentType(AttributeContentType.OBJECT);
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
+        attributeProperties.setLabel(ATTRIBUTE_END_ENTITY_PROFILE_LABEL);
+        attributeProperties.setRequired(false);
+        attributeProperties.setReadOnly(false);
+        attributeProperties.setVisible(true);
+        attributeProperties.setList(true);
+        attributeProperties.setMultiSelect(true);
+        attribute.setProperties(attributeProperties);
         attribute.setContent(List.of());
 
+        return attribute;
+    }
+
+    private DataAttribute listEndEntityProfiles() {
+        DataAttribute attribute = listEndEntityProfilesAttributeBase();
+
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
-        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE+".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
+        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE + ".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
 
         AttributeCallback attributeCallback = new AttributeCallback();
         attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/listEndEntityProfiles");
@@ -171,44 +246,64 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         return attribute;
     }
 
-    private AttributeDefinition listStatus() {
-        List<BaseAttributeContent<String>> statuses = new ArrayList<>();
+    private DataAttribute listEndEntityProfilesWithContent(List<BaseAttributeContent> eeProfilesContent) {
+        DataAttribute attribute = listEndEntityProfilesAttributeBase();
+
+        attribute.setContent(eeProfilesContent);
+
+        return attribute;
+    }
+
+    private DataAttribute listStatus() {
+        List<BaseAttributeContent> statuses = new ArrayList<>();
         for (SearchCertificateCriteriaRestRequest.CertificateStatus status : SearchCertificateCriteriaRestRequest.CertificateStatus.values()) {
-            BaseAttributeContent<String> content = new BaseAttributeContent<>(status.name());
+            StringAttributeContent content = new StringAttributeContent(status.name());
             statuses.add(content);
         }
 
-        AttributeDefinition attribute = new AttributeDefinition();
+        DataAttribute attribute = new DataAttribute();
         attribute.setUuid("2aba1544-abdf-46a0-ab56-ac79f9163018");
         attribute.setName(ATTRIBUTE_EJBCA_STATUS);
-        attribute.setLabel(ATTRIBUTE_EJBCA_STATUS_LABEL);
         attribute.setDescription("Filter certificate status");
-        attribute.setType(AttributeType.JSON);
-        attribute.setRequired(false);
-        attribute.setReadOnly(false);
-        attribute.setVisible(true);
-        attribute.setList(true);
-        attribute.setMultiSelect(true);
+        attribute.setType(AttributeType.DATA);
+        attribute.setContentType(AttributeContentType.OBJECT);
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
+        attributeProperties.setLabel(ATTRIBUTE_EJBCA_STATUS_LABEL);
+        attributeProperties.setRequired(false);
+        attributeProperties.setReadOnly(false);
+        attributeProperties.setVisible(true);
+        attributeProperties.setList(true);
+        attributeProperties.setMultiSelect(true);
+        attribute.setProperties(attributeProperties);
         attribute.setContent(statuses);
 
         return attribute;
     }
 
-    private AttributeDefinition ejbcaRestApiUrl() {
-        AttributeDefinition attribute = new AttributeDefinition();
+    private DataAttribute ejbcaRestApiUrlAttributeBase() {
+        DataAttribute attribute = new DataAttribute();
         attribute.setUuid("c5b974dd-e00a-44b6-b9bc-0946e79730a2");
         attribute.setName(ATTRIBUTE_EJBCA_RESTAPI_URL);
-        attribute.setLabel(ATTRIBUTE_EJBCA_RESTAPI_URL_LABEL);
         attribute.setDescription("Base URL of the EJBCA REST API to be used");
-        attribute.setType(AttributeType.STRING);
-        attribute.setRequired(true);
-        attribute.setReadOnly(false);
-        attribute.setVisible(true);
-        attribute.setList(false);
-        attribute.setMultiSelect(false);
+        attribute.setType(AttributeType.DATA);
+        attribute.setContentType(AttributeContentType.STRING);
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
+        attributeProperties.setLabel(ATTRIBUTE_EJBCA_RESTAPI_URL_LABEL);
+        attributeProperties.setRequired(true);
+        attributeProperties.setReadOnly(false);
+        attributeProperties.setVisible(true);
+        attributeProperties.setList(false);
+        attributeProperties.setMultiSelect(false);
+        attribute.setProperties(attributeProperties);
+
+        return attribute;
+    }
+
+    private DataAttribute ejbcaRestApiUrl() {
+        DataAttribute attribute = ejbcaRestApiUrlAttributeBase();
 
         Set<AttributeCallbackMapping> mappings = new HashSet<>();
-        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE+".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
+        mappings.add(new AttributeCallbackMapping(ATTRIBUTE_EJBCA_INSTANCE + ".data.uuid", "ejbcaInstanceUuid", AttributeValueTarget.PATH_VARIABLE));
 
         AttributeCallback attributeCallback = new AttributeCallback();
         attributeCallback.setCallbackContext("/v1/discoveryProvider/{ejbcaInstanceUuid}/ejbcaRestApi");
@@ -220,35 +315,78 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         return attribute;
     }
 
-    private AttributeDefinition issuedAfter() {
-        AttributeDefinition attribute = new AttributeDefinition();
-        attribute.setUuid("4954adc0-47f0-442d-9347-f270d9ac0074");
-        attribute.setName(ATTRIBUTE_EJBCA_ISSUED_AFTER);
-        attribute.setLabel(ATTRIBUTE_EJBCA_ISSUED_AFTER_LABEL);
-        attribute.setDescription("The date after the certificates were issued");
-        attribute.setType(AttributeType.DATETIME);
-        attribute.setRequired(false);
-        attribute.setReadOnly(false);
-        attribute.setVisible(true);
-        attribute.setList(false);
-        attribute.setMultiSelect(false);
+    private DataAttribute ejbcaRestApiUrlWithContent(List<BaseAttributeContent> urlContent) {
+        DataAttribute attribute = ejbcaRestApiUrlAttributeBase();
+
+        attribute.setContent(urlContent);
 
         return attribute;
     }
 
-    private AttributeDefinition issuedDaysBefore() {
-        AttributeDefinition attribute = new AttributeDefinition();
+    private DataAttribute issuedAfter() {
+        DataAttribute attribute = new DataAttribute();
+        attribute.setUuid("4954adc0-47f0-442d-9347-f270d9ac0074");
+        attribute.setName(ATTRIBUTE_EJBCA_ISSUED_AFTER);
+        attribute.setDescription("The date after the certificates were issued");
+        attribute.setType(AttributeType.DATA);
+        attribute.setContentType(AttributeContentType.DATETIME);
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
+        attributeProperties.setLabel(ATTRIBUTE_EJBCA_ISSUED_AFTER_LABEL);
+        attributeProperties.setRequired(false);
+        attributeProperties.setReadOnly(false);
+        attributeProperties.setVisible(true);
+        attributeProperties.setList(false);
+        attributeProperties.setMultiSelect(false);
+        attribute.setProperties(attributeProperties);
+        return attribute;
+    }
+
+    private DataAttribute issuedDaysBefore() {
+        DataAttribute attribute = new DataAttribute();
         attribute.setUuid("4a92a6c5-38c0-4ebf-8297-594d39572c9c");
         attribute.setName(ATTRIBUTE_ISSUED_DAYS_BEFORE);
-        attribute.setLabel(ATTRIBUTE_ISSUED_DAYS_BEFORE_LABEL);
         attribute.setDescription("Maximum number of days before the certificate was issued, from running the discovery");
-        attribute.setType(AttributeType.INTEGER);
-        attribute.setRequired(true);
-        attribute.setReadOnly(false);
-        attribute.setVisible(true);
-        attribute.setList(false);
-        attribute.setMultiSelect(false);
-        attribute.setContent(new BaseAttributeContent<>(5));
+        attribute.setType(AttributeType.DATA);
+        attribute.setContentType(AttributeContentType.INTEGER);
+        DataAttributeProperties attributeProperties = new DataAttributeProperties();
+        attributeProperties.setLabel(ATTRIBUTE_ISSUED_DAYS_BEFORE_LABEL);
+        attributeProperties.setRequired(true);
+        attributeProperties.setReadOnly(false);
+        attributeProperties.setVisible(true);
+        attributeProperties.setList(false);
+        attributeProperties.setMultiSelect(false);
+        attribute.setProperties(attributeProperties);
+        attribute.setContent(List.of(new IntegerAttributeContent(5)));
+
+        return attribute;
+    }
+
+    private InfoAttribute infoDiscoveryDescription() {
+        InfoAttribute attribute = new InfoAttribute();
+        attribute.setUuid("4a92a6c5-38c0-4ebf-8297-594d39572c9c");
+        attribute.setName("info_discoveryProcess");
+        attribute.setDescription("Discovery process information");
+        attribute.setType(AttributeType.INFO);
+        attribute.setContentType(AttributeContentType.TEXT);
+        InfoAttributeProperties attributeProperties = new InfoAttributeProperties();
+        attributeProperties.setLabel("Discovery process information");
+        attributeProperties.setVisible(true);
+        attribute.setProperties(attributeProperties);
+
+        // prepare markdown string
+        List<Object> items = Arrays.asList(
+                "Certification authority",
+                "End Entity Profile",
+                "Certificate status"
+        );
+        StringBuilder sb = new StringBuilder()
+                .append(new Heading("Overview", 2)).append("\n")
+                .append(new Text("Select EJBCA instance where Discovery process should search for Certificates and then you can optionally select:")).append("\n")
+                .append(new UnorderedList<>(items));
+
+        System.out.println(sb);
+
+        attribute.setContent(List.of(new TextAttributeContent(sb.toString())));
 
         return attribute;
     }

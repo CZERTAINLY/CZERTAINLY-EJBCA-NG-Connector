@@ -1,22 +1,24 @@
 package com.czertainly.ca.connector.ejbca.api;
 
 import com.czertainly.api.exception.CertificateOperationException;
+import com.czertainly.api.exception.NotFoundException;
+import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.interfaces.connector.v2.CertificateController;
-import com.czertainly.api.model.common.attribute.AttributeDefinition;
-import com.czertainly.api.model.common.attribute.AttributeType;
-import com.czertainly.api.model.common.attribute.RequestAttributeDto;
+import com.czertainly.api.model.client.attribute.RequestAttributeDto;
+import com.czertainly.api.model.common.attribute.v2.AttributeType;
+import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
+import com.czertainly.api.model.common.attribute.v2.DataAttribute;
+import com.czertainly.api.model.common.attribute.v2.content.AttributeContentType;
+import com.czertainly.api.model.common.attribute.v2.properties.DataAttributeProperties;
 import com.czertainly.api.model.connector.v2.CertRevocationDto;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
 import com.czertainly.api.model.connector.v2.CertificateRenewRequestDto;
 import com.czertainly.api.model.connector.v2.CertificateSignRequestDto;
-import com.czertainly.ca.connector.ejbca.EjbcaException;
 import com.czertainly.ca.connector.ejbca.service.CertificateEjbcaService;
-import com.czertainly.api.exception.ValidationException;
-import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,55 +33,63 @@ public class CertificateControllerImpl implements CertificateController {
     public static final String ATTRIBUTE_EMAIL_LABEL = "Email";
     public static final String ATTRIBUTE_SAN_LABEL = "Subject Alternative Name";
     public static final String ATTRIBUTE_EXTENSION_LABEL = "Extension Data";
+    private CertificateEjbcaService certificateEjbcaService;
 
     @Autowired
     public void setCertificateEjbcaService(CertificateEjbcaService certificateEjbcaService) {
         this.certificateEjbcaService = certificateEjbcaService;
     }
 
-    private CertificateEjbcaService certificateEjbcaService;
-
     @Override
-    public List<AttributeDefinition> listIssueCertificateAttributes(String uuid) {
-        List<AttributeDefinition> attrs = new ArrayList<>();
+    public List<BaseAttribute> listIssueCertificateAttributes(String uuid) {
+        List<BaseAttribute> attrs = new ArrayList<>();
 
-        AttributeDefinition email = new AttributeDefinition();
+        DataAttribute email = new DataAttribute();
         email.setUuid("0b378474-ebe9-4a17-9d3d-0577eb16aa34");
         email.setName(ATTRIBUTE_EMAIL);
-        email.setLabel(ATTRIBUTE_EMAIL_LABEL);
         email.setDescription("End Entity email address");
-        email.setType(AttributeType.STRING);
-        email.setRequired(false);
-        email.setReadOnly(false);
-        email.setVisible(true);
-        email.setList(false);
-        email.setMultiSelect(false);
+        email.setType(AttributeType.DATA);
+        email.setContentType(AttributeContentType.STRING);
+        DataAttributeProperties emailProperties = new DataAttributeProperties();
+        emailProperties.setLabel(ATTRIBUTE_EMAIL_LABEL);
+        emailProperties.setRequired(false);
+        emailProperties.setReadOnly(false);
+        emailProperties.setVisible(true);
+        emailProperties.setList(false);
+        emailProperties.setMultiSelect(false);
+        email.setProperties(emailProperties);
         attrs.add(email);
 
-        AttributeDefinition san = new AttributeDefinition();
+        DataAttribute san = new DataAttribute();
         san.setUuid("2cfd8c1a-e867-42f1-ab6c-67fb1964e163");
         san.setName(ATTRIBUTE_SAN);
-        san.setLabel(ATTRIBUTE_SAN_LABEL);
         san.setDescription("Comma separated Subject Alternative Names");
-        san.setType(AttributeType.STRING);
-        san.setRequired(false);
-        san.setReadOnly(false);
-        san.setVisible(true);
-        san.setList(false);
-        san.setMultiSelect(false);
+        san.setType(AttributeType.DATA);
+        san.setContentType(AttributeContentType.STRING);
+        DataAttributeProperties sanProperties = new DataAttributeProperties();
+        sanProperties.setLabel(ATTRIBUTE_SAN_LABEL);
+        sanProperties.setRequired(false);
+        sanProperties.setReadOnly(false);
+        sanProperties.setVisible(true);
+        sanProperties.setList(false);
+        sanProperties.setMultiSelect(false);
+        san.setProperties(sanProperties);
         attrs.add(san);
 
-        AttributeDefinition extension = new AttributeDefinition();
+        DataAttribute extension = new DataAttribute();
         extension.setUuid("72324d22-12cb-47ee-a02e-0b1da2013eee");
         extension.setName(ATTRIBUTE_EXTENSION);
-        extension.setLabel(ATTRIBUTE_EXTENSION_LABEL);
         extension.setDescription("Comma separated Extension Data");
-        extension.setType(AttributeType.STRING);
-        extension.setRequired(false);
-        extension.setReadOnly(false);
-        extension.setVisible(true);
-        extension.setList(false);
-        extension.setMultiSelect(false);
+        extension.setType(AttributeType.DATA);
+        extension.setContentType(AttributeContentType.STRING);
+        DataAttributeProperties extensionProperties = new DataAttributeProperties();
+        extensionProperties.setLabel(ATTRIBUTE_EXTENSION_LABEL);
+        extensionProperties.setRequired(false);
+        extensionProperties.setReadOnly(false);
+        extensionProperties.setVisible(true);
+        extensionProperties.setList(false);
+        extensionProperties.setMultiSelect(false);
+        extension.setProperties(extensionProperties);
         attrs.add(extension);
 
         return attrs;
@@ -111,7 +121,7 @@ public class CertificateControllerImpl implements CertificateController {
     }
 
     @Override
-    public List<AttributeDefinition> listRevokeCertificateAttributes(String uuid) {
+    public List<BaseAttribute> listRevokeCertificateAttributes(String uuid) {
         return List.of();
     }
 
