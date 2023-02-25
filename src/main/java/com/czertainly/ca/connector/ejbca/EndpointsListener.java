@@ -25,7 +25,7 @@ public class EndpointsListener {
     @EventListener
     public void handleContextRefresh(ContextRefreshedEvent event) {
         ApplicationContext applicationContext = event.getApplicationContext();
-        applicationContext.getBean(RequestMappingHandlerMapping.class)
+        applicationContext.getBean("requestMappingHandlerMapping", RequestMappingHandlerMapping.class)
                 .getHandlerMethods()
                 .entrySet().stream()
                 .filter(e -> (e.getKey().getMethodsCondition().getMethods() != null && !e.getKey().getMethodsCondition().getMethods().isEmpty()))
