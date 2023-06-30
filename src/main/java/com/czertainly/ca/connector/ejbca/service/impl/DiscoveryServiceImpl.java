@@ -102,7 +102,7 @@ public class DiscoveryServiceImpl implements DiscoveryService {
             dto.setCertificateData(new ArrayList<>());
             dto.setTotalCertificatesDiscovered(0);
         } else {
-            Pageable page = PageRequest.of(request.getStartIndex(), request.getEndIndex());
+            Pageable page = PageRequest.of(request.getPageNumber() <= 0 ? 0 : request.getPageNumber() - 1, request.getItemsPerPage());
             dto.setCertificateData(certificateRepository.findAllByDiscoveryId(history.getId(), page).stream().map(Certificate::mapToDto).collect(Collectors.toList()));
         }
         return dto;
