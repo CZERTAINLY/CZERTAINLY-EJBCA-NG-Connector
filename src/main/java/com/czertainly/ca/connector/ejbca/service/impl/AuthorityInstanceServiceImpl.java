@@ -58,6 +58,12 @@ import java.util.stream.Collectors;
 public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
     private static final Logger logger = LoggerFactory.getLogger(AuthorityInstanceServiceImpl.class);
 
+    /**
+     * This is the maximum size in bytes of the payload
+     */
+    @Value("${spring.codec.max-in-memory-size:2000000}")
+    private int MAX_PAYLOAD_SIZE;
+
     private static final Map<Long, EjbcaWS> connectionsCache = new ConcurrentHashMap<>();
     private static final Map<Long, WebClient> connectionsRestApiCache = new ConcurrentHashMap<>();
 
@@ -318,12 +324,8 @@ public class AuthorityInstanceServiceImpl implements AuthorityInstanceService {
     private WebClient createRestApiConnection(AuthorityInstance instance) {
         List<BaseAttribute> attributes = AttributeDefinitionUtils.deserialize(instance.getCredentialData(), BaseAttribute.class);
 
-        /**
-         * 1 certificate in response ~ 2000 bytes * 1000 = 2000000
-         */
-        final int size = 2000 * 1000;
         final ExchangeStrategies strategies = ExchangeStrategies.builder()
-                .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(size))
+                .codecs(codecs -> codecs.defaultCodecs().maxInMemorySize(MAX_PAYLOAD_SIZE))
                 .build();
 
         SslContext sslContext = EjbcaRestApiClient.createSslContext(attributes, trustedCertificatesConfig.getDefaultTrustManagers());

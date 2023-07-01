@@ -84,15 +84,17 @@ For more information, please refer to the [CZERTAINLY documentation](https://doc
 
 EJBCA NG `Connector` is provided as a Docker container. Use the `docker pull harbor.3key.company/czertainly/czertainly-ejbca-ng-connector:tagname` to pull the required image from the repository. It can be configured using the following environment variables:
 
-| Variable               | Description                                         | Required                                           | Default value |
-|------------------------|-----------------------------------------------------|----------------------------------------------------|---------------|
-| `JDBC_URL`             | JDBC URL for database access                        | ![](https://img.shields.io/badge/-YES-success.svg) | `N/A`         |
-| `JDBC_USERNAME`        | Username to access the database                     | ![](https://img.shields.io/badge/-YES-success.svg) | `N/A`         |
-| `JDBC_PASSWORD`        | Password to access the database                     | ![](https://img.shields.io/badge/-YES-success.svg) | `N/A`         |
-| `DB_SCHEMA`            | Database schema to use                              | ![](https://img.shields.io/badge/-NO-red.svg)      | `ejbca`       |
-| `PORT`                 | Port where the service is exposed                   | ![](https://img.shields.io/badge/-NO-red.svg)      | `8080`        |
-| `TRUSTED_CERTIFICATES` | List of PEM encoded additional trusted certificates | ![](https://img.shields.io/badge/-NO-red.svg)      | `N/A`         |
-| `REMOTE_DEBUG`         | Enables JVM remote debug on port 5005               | ![](https://img.shields.io/badge/-NO-red.svg)      | `false`       |
+| Variable                 | Description                                            | Required                                           | Default value |
+|--------------------------|--------------------------------------------------------|----------------------------------------------------|---------------|
+| `JDBC_URL`               | JDBC URL for database access                           | ![](https://img.shields.io/badge/-YES-success.svg) | `N/A`         |
+| `JDBC_USERNAME`          | Username to access the database                        | ![](https://img.shields.io/badge/-YES-success.svg) | `N/A`         |
+| `JDBC_PASSWORD`          | Password to access the database                        | ![](https://img.shields.io/badge/-YES-success.svg) | `N/A`         |
+| `DB_SCHEMA`              | Database schema to use                                 | ![](https://img.shields.io/badge/-NO-red.svg)      | `ejbca`       |
+| `PORT`                   | Port where the service is exposed                      | ![](https://img.shields.io/badge/-NO-red.svg)      | `8080`        |
+| `TRUSTED_CERTIFICATES`   | List of PEM encoded additional trusted certificates    | ![](https://img.shields.io/badge/-NO-red.svg)      | `N/A`         |
+| `REMOTE_DEBUG`           | Enables JVM remote debug on port 5005                  | ![](https://img.shields.io/badge/-NO-red.svg)      | `false`       |
+| `MAX_PAYLOAD_SIZE`       | Maximum payload size in bytes                          | ![](https://img.shields.io/badge/-NO-red.svg)      | `2000000`     |
+| `EJBCA_SEARCH_PAGE_SIZE` | Maximum number of certificates to fetch in one request | ![](https://img.shields.io/badge/-NO-red.svg)      | `100`         |
 
 ### Proxy settings
 

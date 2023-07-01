@@ -27,10 +27,12 @@ import com.czertainly.ca.connector.ejbca.dto.ejbca.response.SearchCertificatesRe
 import com.czertainly.ca.connector.ejbca.service.DiscoveryHistoryService;
 import com.czertainly.ca.connector.ejbca.service.DiscoveryService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
+import com.czertainly.ca.connector.ejbca.util.EjbcaVersion;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
@@ -56,7 +58,8 @@ public class DiscoveryServiceImpl implements DiscoveryService {
     /**
      * This constant represents the number of certificate per page in searching
      */
-    private static final int EJBCA_SEARCH_PAGE_SIZE = 1000;
+    @Value("${ejbca.search.pageSize:100}")
+    private int EJBCA_SEARCH_PAGE_SIZE;
     private EjbcaService ejbcaService;
     private CertificateRepository certificateRepository;
     private DiscoveryHistoryService discoveryHistoryService;
@@ -102,7 +105,7 @@ public class DiscoveryServiceImpl implements DiscoveryService {
             dto.setCertificateData(new ArrayList<>());
             dto.setTotalCertificatesDiscovered(0);
         } else {
-            Pageable page = PageRequest.of(request.getStartIndex(), request.getEndIndex());
+            Pageable page = PageRequest.of(request.getPageNumber() <= 0 ? 0 : request.getPageNumber() - 1, request.getItemsPerPage());
             dto.setCertificateData(certificateRepository.findAllByDiscoveryId(history.getId(), page).stream().map(Certificate::mapToDto).collect(Collectors.toList()));
         }
         return dto;
@@ -160,17 +163,39 @@ public class DiscoveryServiceImpl implements DiscoveryService {
 
         SearchCertificatesRestRequestV2 searchRequest = prepareSearchRequest(cas, eeProfiles, statuses, issuedAfter);
         SearchCertificatesRestResponseV2 searchResponse;
-        do {
-            searchResponse = ejbcaService.searchCertificates(instance.getUuid(), restApiUrl, searchRequest);
-            // break the loop if there are no certificates returned from EJBCA
-            if (searchResponse.getCertificates().isEmpty()) {
-                break;
-            }
-            // set the next page
-            searchRequest.getPagination().setCurrentPage(searchResponse.getPaginationSummary().getCurrentPage() + 1);
-            parseAndCreateCertificateEntry(searchResponse, history);
-            certificatesFound = certificatesFound + searchResponse.getCertificates().size();
-        } while (searchResponse.getPaginationSummary().getTotalCerts() == null);
+
+        // behaviour of the EJBCA REST API for searching certificates differs between versions
+        // we need to check the version and decide on the implementation
+        // TODO: this can be improved once there are more versions of implementation
+        EjbcaVersion ejbcaVersion = ejbcaService.getEjbcaVersion(instance.getUuid());
+        logger.debug("Searching for certificates in EJBCA version {}, with page size {}", ejbcaVersion.getVersion(), EJBCA_SEARCH_PAGE_SIZE);
+
+        // when the version is at least 7.11
+        if (ejbcaVersion.getTechVersion() >= 7 && ejbcaVersion.getMajorVersion() >= 11) {
+            do {
+                searchResponse = ejbcaService.searchCertificates(instance.getUuid(), restApiUrl, searchRequest);
+                // break the loop if there are no certificates returned from EJBCA
+                if (searchResponse.getCertificates().isEmpty()) {
+                    break;
+                }
+                // set the next page
+                searchRequest.getPagination().setCurrentPage(searchResponse.getPaginationSummary().getCurrentPage() + 1);
+                parseAndCreateCertificateEntry(searchResponse, history);
+                certificatesFound = certificatesFound + searchResponse.getCertificates().size();
+            } while (!searchResponse.getCertificates().isEmpty());
+        } else { // when the version is lower than 7.11, but higher than 7.8
+            do {
+                searchResponse = ejbcaService.searchCertificates(instance.getUuid(), restApiUrl, searchRequest);
+                // break the loop if there are no certificates returned from EJBCA
+                if (searchResponse.getCertificates().isEmpty()) {
+                    break;
+                }
+                // set the next page
+                searchRequest.getPagination().setCurrentPage(searchResponse.getPaginationSummary().getCurrentPage() + 1);
+                parseAndCreateCertificateEntry(searchResponse, history);
+                certificatesFound = certificatesFound + searchResponse.getCertificates().size();
+            } while (searchResponse.getPaginationSummary().getTotalCerts() == null);
+        }
 
         history.setStatus(DiscoveryStatus.COMPLETED);
         history.setMeta(AttributeDefinitionUtils.serialize(getDiscoveryMeta(certificatesFound)));

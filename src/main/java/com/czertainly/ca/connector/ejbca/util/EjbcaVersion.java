@@ -7,8 +7,8 @@ public class EjbcaVersion {
     private int minorVersion;
     private String version;
 
-    public EjbcaVersion(String ejbcaersion) {
-        readVersionNumbers(ejbcaersion);
+    public EjbcaVersion(String ejbcaVersion) {
+        readVersionNumbers(ejbcaVersion);
     }
 
     private void readVersionNumbers(String ejbcaVersion) {
