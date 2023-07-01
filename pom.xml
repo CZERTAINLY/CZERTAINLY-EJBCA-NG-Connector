@@ -13,7 +13,7 @@
 
     <groupId>com.czertainly</groupId>
     <artifactId>ejbca-ng-connector</artifactId>
-    <version>1.4.1-SNAPSHOT</version>
+    <version>1.5.0</version>
     <name>CZERTAINLY-EJBCA-NG-Connector</name>
 
     <properties>
