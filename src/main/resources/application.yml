@@ -16,10 +16,17 @@ spring:
   jpa:
     properties:
       hibernate.default_schema: ${DB_SCHEMA:ejbca}
+  codec:
+    # The maximum number of bytes that can be buffered whenever a codec is used.
+    max-in-memory-size: ${MAX_PAYLOAD_SIZE:2000000}
+
 ejbca:
   timeout:
     connect: 500
     request: 1500
+  search:
+    # The maximum number of certificates to return in one page
+    pageSize: ${EJBCA_SEARCH_PAGE_SIZE:100}
 
 management:
   endpoints:

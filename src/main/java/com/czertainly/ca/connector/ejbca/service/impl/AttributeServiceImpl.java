@@ -29,7 +29,7 @@ public class AttributeServiceImpl implements AttributeService {
 
 	@Override
 	public List<BaseAttribute> getAttributes(String kind) {
-		logger.info("Getting the attributes for {}", kind);
+		logger.debug("Getting the attributes for {}", kind);
 		List<BaseAttribute> attrs = new ArrayList<>();
 
         DataAttribute url = new DataAttribute();
