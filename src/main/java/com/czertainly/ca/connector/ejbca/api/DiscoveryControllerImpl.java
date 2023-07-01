@@ -34,7 +34,7 @@ public class DiscoveryControllerImpl implements DiscoveryController {
 
     @Override
     public DiscoveryProviderDto discoverCertificate(DiscoveryRequestDto request) throws IOException, NotFoundException {
-        logger.info("Initiating certificate discovery for the given inputs");
+        logger.debug("Initiating certificate discovery: {}", request);
         DiscoveryHistory history;
         history = discoveryHistoryService.addHistory(request);
         discoveryService.discoverCertificate(request, history);

@@ -64,7 +64,7 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
         if (!kind.equals(DiscoveryKind.EJBCA.name()) && !kind.equals(DiscoveryKind.EJBCA_SCHEDULE.name())) {
             throw new ValidationException("Unsupported kind: " + kind, new ValidationError("Unsupported kind: " + kind));
         }
-        logger.info("Listing discovery attributes for {}", kind);
+        logger.debug("Listing discovery attributes for {}", kind);
 
         List<BaseAttribute> attributes = new ArrayList<>();
         attributes.add(infoDiscoveryDescription());
@@ -383,8 +383,6 @@ public class DiscoveryAttributeServiceImpl implements DiscoveryAttributeService 
                 .append(new Heading("Overview", 2)).append("\n")
                 .append(new Text("Select EJBCA instance where Discovery process should search for Certificates and then you can optionally select:")).append("\n")
                 .append(new UnorderedList<>(items));
-
-        System.out.println(sb);
 
         attribute.setContent(List.of(new TextAttributeContent(sb.toString())));
 
