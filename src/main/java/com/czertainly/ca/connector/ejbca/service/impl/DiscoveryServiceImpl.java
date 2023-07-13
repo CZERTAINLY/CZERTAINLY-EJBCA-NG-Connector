@@ -170,10 +170,24 @@ public class DiscoveryServiceImpl implements DiscoveryService {
         EjbcaVersion ejbcaVersion = ejbcaService.getEjbcaVersion(instance.getUuid());
         logger.debug("Searching for certificates in EJBCA version {}, with page size {}", ejbcaVersion.getVersion(), EJBCA_SEARCH_PAGE_SIZE);
 
+        int searchVersion = 0;
+        // we need to check version of EJBCA for different implementation of the REST API
+        if (ejbcaVersion.getTechVersion() > 7) {
+            searchVersion = 2;
+        } else if (ejbcaVersion.getTechVersion() == 7 && ejbcaVersion.getMajorVersion() >= 11) {
+            searchVersion = 2;
+        } else if (ejbcaVersion.getTechVersion() == 7 && ejbcaVersion.getMajorVersion() >= 8) {
+            searchVersion = 1;
+        } else {
+            throw new Exception("Unsupported EJBCA version");
+        }
+
         // when the version is at least 7.11
-        if (ejbcaVersion.getTechVersion() >= 7 && ejbcaVersion.getMajorVersion() >= 11) {
+        if (searchVersion == 2) {
             do {
+                logger.info("Request: {}", searchRequest);
                 searchResponse = ejbcaService.searchCertificates(instance.getUuid(), restApiUrl, searchRequest);
+                logger.info("Page: {}, Found {}", searchResponse.getPaginationSummary().getCurrentPage() ,searchResponse.getCertificates().size());
                 // break the loop if there are no certificates returned from EJBCA
                 if (searchResponse.getCertificates().isEmpty()) {
                     break;
@@ -182,6 +196,7 @@ public class DiscoveryServiceImpl implements DiscoveryService {
                 searchRequest.getPagination().setCurrentPage(searchResponse.getPaginationSummary().getCurrentPage() + 1);
                 parseAndCreateCertificateEntry(searchResponse, history);
                 certificatesFound = certificatesFound + searchResponse.getCertificates().size();
+                logger.info("Before while: isEmpty: {}", searchResponse.getCertificates().isEmpty());
             } while (!searchResponse.getCertificates().isEmpty());
         } else { // when the version is lower than 7.11, but higher than 7.8
             do {

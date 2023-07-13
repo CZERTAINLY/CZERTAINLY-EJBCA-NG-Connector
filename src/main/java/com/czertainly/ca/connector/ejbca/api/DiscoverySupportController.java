@@ -146,7 +146,13 @@ public class DiscoverySupportController {
     private void checkEjbcaVersion(String ejbcaInstanceName) throws NotFoundException {
         EjbcaVersion ejbcaVersion = ejbcaService.getEjbcaVersion(ejbcaInstanceName);
 
-        boolean supported = ejbcaVersion.getTechVersion() >= 7 && ejbcaVersion.getMajorVersion() >= 8;
+        boolean supported = false;
+        // check the EJBCA version, only from 7.8 and above the REST API for certificate searching is available
+        if (ejbcaVersion.getTechVersion() > 7) {
+            supported = true;
+        } else if (ejbcaVersion.getTechVersion() == 7) {
+            supported = ejbcaVersion.getMajorVersion() >= 8;
+        }
 
         if (!supported) {
             List<ValidationError> errors = new ArrayList<>();
