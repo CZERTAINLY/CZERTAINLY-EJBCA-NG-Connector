@@ -251,7 +251,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
             X509Certificate certificate = CertificateUtil.parseCertificate(request.getCertificate());
             String issuerDn = CertificateUtil.getIssuerDnFromX509Certificate(certificate);
             String serialNumber = CertificateUtil.getSerialNumberFromX509Certificate(certificate);
-            int revocationCode = request.getReason().getCode();
+            int revocationCode = request.getReason().getReasonCode();
             ejbcaService.revokeCertificate(uuid, issuerDn, serialNumber, revocationCode);
         } catch (Exception e) {
             throw new IllegalStateException(e);
