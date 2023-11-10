@@ -1,12 +1,12 @@
 package com.czertainly.ca.connector.ejbca.config.proxy;
 
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 
-import javax.annotation.PostConstruct;
 import java.net.Authenticator;
 
 /**
