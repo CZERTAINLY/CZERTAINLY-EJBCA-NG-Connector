@@ -1,7 +1,7 @@
 
 package com.czertainly.ca.connector.ejbca.ws;
 
-import javax.xml.ws.WebFault;
+import jakarta.xml.ws.WebFault;
 
 
 /**
