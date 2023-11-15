@@ -304,7 +304,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
             X509Certificate certificate = CertificateUtil.parseCertificate(request.getCertificate());
             sn = CertificateUtil.getSerialNumberFromX509Certificate(certificate);
         } catch (CertificateException e) {
-            throw new RuntimeException("Cannot read certificate: " + e);
+            throw new ValidationException("Cannot read certificate: " + e);
         }
 
         // prepare search request
@@ -328,14 +328,14 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         try {
             response = ejbcaService.searchCertificates(uuid, restApiUrl, searchRequest);
         } catch (Exception e) {
-            throw new RuntimeException("Cannot identify certificate: serialnumber=" + sn + ", " + e);
+            throw new ValidationException("Cannot identify certificate: serialnumber=" + sn + ", " + e);
         }
 
         // check if we found the certificate and process result
         if (response.getCertificates().isEmpty()) {
             throw new NotFoundException();
         } else if (response.getCertificates().size() > 1) { // this should not happen
-            throw new RuntimeException("More than one certificate found with serial number: " + sn);
+            throw new ValidationException("More than one certificate found with serial number: " + sn);
         } else { // check the properties of the certificate
             CertificateRestResponseV2 certificate = response.getCertificates().get(0);
             if (certificate.getEndEntityProfileId() == endEntityProfile.getId() &&
@@ -353,7 +353,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
                 responseDto.setMeta(meta);
                 return responseDto;
             } else {
-                throw new RuntimeException("Certificate found with serial number: " + sn + " but it does not match according to RA Profile attributes");
+                throw new ValidationException("Certificate found with serial number: " + sn + " but it does not match according to RA Profile attributes");
             }
         }
     }

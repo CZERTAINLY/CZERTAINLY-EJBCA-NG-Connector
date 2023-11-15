@@ -1,6 +1,7 @@
 package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.exception.NotFoundException;
+import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.model.client.attribute.RequestAttributeDto;
 import com.czertainly.api.model.common.NameAndIdDto;
 import com.czertainly.api.model.connector.v2.CertificateIdentificationRequestDto;
@@ -51,7 +52,7 @@ public class CertificateEjbcaServiceImplTest {
         given(authorityInstanceService.getRestApiUrl(eq(uuid))).willReturn("https://ejbca.czertainly.com:8443/ejbca/rest");
         given(ejbcaService.searchCertificates(eq(uuid), any(), any())).willReturn(getSearchCertificatesRestResponseV2_Certificate(12345, "TestProfile"));
 
-        Assertions.assertThrows(RuntimeException.class, () -> certificateEjbcaServiceImpl.identifyCertificate(uuid, getCertificateIdentificationRequestDto(98765, "TestProfile")));
+        Assertions.assertThrows(ValidationException.class, () -> certificateEjbcaServiceImpl.identifyCertificate(uuid, getCertificateIdentificationRequestDto(98765, "TestProfile")));
     }
 
     @Test
