@@ -1,18 +1,23 @@
 package com.czertainly.ca.connector.ejbca.service.impl;
 
 import com.czertainly.api.exception.NotFoundException;
+import com.czertainly.api.exception.ValidationException;
+import com.czertainly.api.model.common.NameAndIdDto;
 import com.czertainly.api.model.common.attribute.v2.AttributeType;
 import com.czertainly.api.model.common.attribute.v2.MetadataAttribute;
 import com.czertainly.api.model.common.attribute.v2.content.AttributeContentType;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.properties.MetadataAttributeProperties;
-import com.czertainly.api.model.connector.v2.CertRevocationDto;
-import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
-import com.czertainly.api.model.connector.v2.CertificateRenewRequestDto;
-import com.czertainly.api.model.connector.v2.CertificateSignRequestDto;
+import com.czertainly.api.model.connector.v2.*;
 import com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl;
 import com.czertainly.ca.connector.ejbca.api.CertificateControllerImpl;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.request.Pagination;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificateCriteriaRestRequest;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificatesRestRequestV2;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.response.CertificateRestResponseV2;
+import com.czertainly.ca.connector.ejbca.dto.ejbca.response.SearchCertificatesRestResponseV2;
 import com.czertainly.ca.connector.ejbca.enums.UsernameGenMethod;
+import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.CertificateEjbcaService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
 import com.czertainly.ca.connector.ejbca.util.CertificateUtil;
@@ -32,11 +37,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.czertainly.ca.connector.ejbca.api.AuthorityInstanceControllerImpl.*;
 
 @Service
 @Transactional
@@ -49,10 +57,16 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
     public final String META_EJBCA_USERNAME = "ejbcaUsername";
     private final String COMMON_NAME = "2.5.4.3";
     private EjbcaService ejbcaService;
+    private AuthorityInstanceService authorityInstanceService;
 
     @Autowired
     public void setEjbcaService(EjbcaService ejbcaService) {
         this.ejbcaService = ejbcaService;
+    }
+
+    @Autowired
+    public void setAuthorityInstanceService(AuthorityInstanceService authorityInstanceService) {
+        this.authorityInstanceService = authorityInstanceService;
     }
 
     @Override
@@ -141,6 +155,24 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
 
         attributes.add(attribute);
         return attributes;
+    }
+
+    private MetadataAttribute getUsernameMetadataAttribute(String username) {
+        // Username
+        MetadataAttribute attribute = new MetadataAttribute();
+        attribute.setUuid("b42ab690-60fd-11ed-9b6a-0242ac120002");
+        attribute.setName(META_EJBCA_USERNAME);
+        attribute.setDescription("EJBCA Username");
+        attribute.setType(AttributeType.META);
+        attribute.setContentType(AttributeContentType.STRING);
+        attribute.setContent(List.of(new StringAttributeContent(username)));
+
+        MetadataAttributeProperties attributeProperties = new MetadataAttributeProperties();
+        attributeProperties.setVisible(true);
+        attributeProperties.setLabel("EJBCA Username");
+        attribute.setProperties(attributeProperties);
+
+        return attribute;
     }
 
     private List<MetadataAttribute> getIssueMetadata(String username, String email, String san, String extensions) {
@@ -255,6 +287,74 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
             ejbcaService.revokeCertificate(uuid, issuerDn, serialNumber, revocationCode);
         } catch (Exception e) {
             throw new IllegalStateException(e);
+        }
+    }
+
+    @Override
+    public CertificateIdentificationResponseDto identifyCertificate(String uuid, CertificateIdentificationRequestDto request) throws NotFoundException, ValidationException {
+        // load and parse data we need to identify the certificate
+        NameAndIdDto endEntityProfile = AttributeDefinitionUtils.getNameAndIdData(ATTRIBUTE_END_ENTITY_PROFILE, request.getRaProfileAttributes());
+        NameAndIdDto certificateProfile = AttributeDefinitionUtils.getNameAndIdData(ATTRIBUTE_CERTIFICATE_PROFILE, request.getRaProfileAttributes());
+        //NameAndIdDto certificationAuthority = AttributeDefinitionUtils.getNameAndIdData(ATTRIBUTE_CERTIFICATION_AUTHORITY, request.getRaProfileAttributes());
+        //Boolean sendNotifications = AttributeDefinitionUtils.getSingleItemAttributeContentValue(ATTRIBUTE_SEND_NOTIFICATIONS, request.getRaProfileAttributes(), BooleanAttributeContent.class).getData();
+        //Boolean keyRecoverable = AttributeDefinitionUtils.getSingleItemAttributeContentValue(ATTRIBUTE_KEY_RECOVERABLE, request.getRaProfileAttributes(), BooleanAttributeContent.class).getData();
+        String restApiUrl = authorityInstanceService.getRestApiUrl(uuid);
+        String sn;
+        try {
+            X509Certificate certificate = CertificateUtil.parseCertificate(request.getCertificate());
+            sn = CertificateUtil.getSerialNumberFromX509Certificate(certificate);
+        } catch (CertificateException e) {
+            throw new RuntimeException("Cannot read certificate: " + e);
+        }
+
+        // prepare search request
+        SearchCertificatesRestRequestV2 searchRequest = new SearchCertificatesRestRequestV2();
+        // set pagination
+        Pagination pagination = new Pagination();
+        pagination.setPageSize(10);
+        pagination.setCurrentPage(1);
+        // add serial number as search criteria
+        List<SearchCertificateCriteriaRestRequest> criteria = new ArrayList<>();
+        SearchCertificateCriteriaRestRequest c = new SearchCertificateCriteriaRestRequest();
+        c.setOperation(SearchCertificateCriteriaRestRequest.CriteriaOperation.EQUAL.name());
+        c.setProperty(SearchCertificateCriteriaRestRequest.CriteriaProperty.QUERY.name());
+        c.setValue(sn);
+        criteria.add(c);
+        searchRequest.setPagination(pagination);
+        searchRequest.setCriteria(criteria);
+
+        // search for the certificate
+        SearchCertificatesRestResponseV2 response;
+        try {
+            response = ejbcaService.searchCertificates(uuid, restApiUrl, searchRequest);
+        } catch (Exception e) {
+            throw new RuntimeException("Cannot identify certificate: serialnumber=" + sn + ", " + e);
+        }
+
+        // check if we found the certificate and process result
+        if (response.getCertificates().isEmpty()) {
+            throw new NotFoundException();
+        } else if (response.getCertificates().size() > 1) { // this should not happen
+            throw new RuntimeException("More than one certificate found with serial number: " + sn);
+        } else { // check the properties of the certificate
+            CertificateRestResponseV2 certificate = response.getCertificates().get(0);
+            if (certificate.getEndEntityProfileId() == endEntityProfile.getId() &&
+                certificate.getCertificateProfileId() == certificateProfile.getId()
+                // we do not need to check the CA, as it should be already checked by the RA Profile
+                // TODO: check the end entity profile for all attributes that are not present in CertificateRestResponseV2
+                // certificate.getSendNotifications() == sendNotifications &&
+                // certificate.getKeyRecoverable() == keyRecoverable
+            ) {
+                CertificateIdentificationResponseDto responseDto = new CertificateIdentificationResponseDto();
+
+                List<MetadataAttribute> meta = new ArrayList<>();
+                meta.add(getUsernameMetadataAttribute(certificate.getUsername()));
+
+                responseDto.setMeta(meta);
+                return responseDto;
+            } else {
+                throw new RuntimeException("Certificate found with serial number: " + sn + " but it does not match according to RA Profile attributes");
+            }
         }
     }
 

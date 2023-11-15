@@ -1,10 +1,8 @@
 package com.czertainly.ca.connector.ejbca.service;
 
 import com.czertainly.api.exception.NotFoundException;
-import com.czertainly.api.model.connector.v2.CertRevocationDto;
-import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
-import com.czertainly.api.model.connector.v2.CertificateRenewRequestDto;
-import com.czertainly.api.model.connector.v2.CertificateSignRequestDto;
+import com.czertainly.api.exception.ValidationException;
+import com.czertainly.api.model.connector.v2.*;
 import org.springframework.security.access.AccessDeniedException;
 
 public interface CertificateEjbcaService {
@@ -14,4 +12,6 @@ public interface CertificateEjbcaService {
     CertificateDataResponseDto renewCertificate(String uuid, CertificateRenewRequestDto request) throws Exception;
 
     void revokeCertificate(String uuid, CertRevocationDto request) throws NotFoundException, AccessDeniedException;
+
+    CertificateIdentificationResponseDto identifyCertificate(String uuid, CertificateIdentificationRequestDto request) throws NotFoundException, ValidationException;
 }

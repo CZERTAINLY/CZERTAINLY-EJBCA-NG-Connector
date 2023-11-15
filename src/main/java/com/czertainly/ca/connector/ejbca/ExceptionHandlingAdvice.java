@@ -126,6 +126,18 @@ public class ExceptionHandlingAdvice {
     }
 
     /**
+     * Handler for {@link RuntimeException}.
+     *
+     * @return
+     */
+    @ExceptionHandler(RuntimeException.class)
+    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    public ErrorMessageDto handleRuntimeException(RuntimeException ex) {
+        LOG.info("HTTP 422: {}", ex.getMessage());
+        return ErrorMessageDto.getInstance(ex.getMessage());
+    }
+
+    /**
      * Handler for {@link Exception}.
      *
      * @return
