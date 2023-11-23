@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientResponse;
@@ -107,7 +108,7 @@ public abstract class EjbcaRestApiClient {
     public static Mono<ClientResponse> handleHttpExceptions(ClientResponse clientResponse) {
         if (clientResponse.statusCode().is4xxClientError() || clientResponse.statusCode().is5xxServerError()) {
             return clientResponse.bodyToMono(ExceptionErrorRestResponse.class).flatMap(body ->
-                    Mono.error(new EjbcaRestApiException(body.getErrorMessage(), clientResponse.statusCode(), body)));
+                    Mono.error(new EjbcaRestApiException(body.getErrorMessage(), HttpStatus.valueOf(clientResponse.statusCode().value()), body)));
         }
 
         return Mono.just(clientResponse);

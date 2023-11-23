@@ -10,10 +10,7 @@ import com.czertainly.api.model.common.attribute.v2.BaseAttribute;
 import com.czertainly.api.model.common.attribute.v2.DataAttribute;
 import com.czertainly.api.model.common.attribute.v2.content.AttributeContentType;
 import com.czertainly.api.model.common.attribute.v2.properties.DataAttributeProperties;
-import com.czertainly.api.model.connector.v2.CertRevocationDto;
-import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
-import com.czertainly.api.model.connector.v2.CertificateRenewRequestDto;
-import com.czertainly.api.model.connector.v2.CertificateSignRequestDto;
+import com.czertainly.api.model.connector.v2.*;
 import com.czertainly.ca.connector.ejbca.service.CertificateEjbcaService;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -135,5 +132,10 @@ public class CertificateControllerImpl implements CertificateController {
     @Override
     public void revokeCertificate(String uuid, CertRevocationDto request) throws NotFoundException, AccessDeniedException {
         certificateEjbcaService.revokeCertificate(uuid, request);
+    }
+
+    @Override
+    public CertificateIdentificationResponseDto identifyCertificate(String uuid, CertificateIdentificationRequestDto request) throws NotFoundException, ValidationException {
+        return certificateEjbcaService.identifyCertificate(uuid, request);
     }
 }
