@@ -1,6 +1,9 @@
 package com.czertainly.ca.connector.ejbca.util;
 
 import com.czertainly.api.exception.NotFoundException;
+import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
+import com.czertainly.api.model.core.certificate.CertificateType;
+import com.czertainly.ca.connector.ejbca.ws.Certificate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,6 +13,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
+import java.util.List;
 
 public class CertificateUtil {
 
@@ -68,5 +72,23 @@ public class CertificateUtil {
 			return (X509Certificate) CertificateFactory.getInstance("X.509")
 					.generateCertificates(new ByteArrayInputStream(decoded)).iterator().next();
 		}
+	}
+
+	public static List<CertificateDataResponseDto> convertWSCertificateDataToDto(List<Certificate> certificates) {
+		return certificates.stream().map(CertificateUtil::convertWSCertificateDataToDto).toList();
+	}
+
+	public static CertificateDataResponseDto convertWSCertificateDataToDto(Certificate certificate) {
+		CertificateDataResponseDto certificateData = new CertificateDataResponseDto();
+		// this is certificate in Base64 format
+		certificateData.setCertificateData(
+				new String(certificate.getCertificateData()) // just to be on the safe side, remove potential header and footer and new lines
+						.replace("-----BEGIN CERTIFICATE-----", "")
+						.replace("\r", "")
+						.replace("\n", "")
+						.replace("-----END CERTIFICATE-----", "")
+		);
+		certificateData.setCertificateType(CertificateType.X509);
+		return certificateData;
 	}
 }
