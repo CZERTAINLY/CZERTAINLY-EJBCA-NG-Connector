@@ -18,10 +18,11 @@ import com.czertainly.api.model.common.attribute.v2.content.BooleanAttributeCont
 import com.czertainly.api.model.common.attribute.v2.content.ObjectAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.properties.DataAttributeProperties;
-import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceDto;
-import com.czertainly.api.model.connector.authority.AuthorityProviderInstanceRequestDto;
+import com.czertainly.api.model.connector.authority.*;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
+import com.czertainly.ca.connector.ejbca.service.EjbcaService;
 import com.czertainly.ca.connector.ejbca.service.EndEntityProfileEjbcaService;
+import com.czertainly.ca.connector.ejbca.util.CertificateUtil;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,6 +56,7 @@ public class AuthorityInstanceControllerImpl implements AuthorityInstanceControl
     public static final String ATTRIBUTE_USERNAME_POSTFIX_LABEL = "Username Postfix";
     private AuthorityInstanceService authorityInstanceService;
     private EndEntityProfileEjbcaService endEntityProfileEjbcaService;
+    private EjbcaService ejbcaService;
 
     @Autowired
     public void setAuthorityInstanceService(AuthorityInstanceService authorityInstanceService) {
@@ -64,6 +66,11 @@ public class AuthorityInstanceControllerImpl implements AuthorityInstanceControl
     @Autowired
     public void setEndEntityProfileEjbcaService(EndEntityProfileEjbcaService endEntityProfileEjbcaService) {
         this.endEntityProfileEjbcaService = endEntityProfileEjbcaService;
+    }
+
+    @Autowired
+    public void setEjbcaService(EjbcaService ejbcaService) {
+        this.ejbcaService = ejbcaService;
     }
 
     @Override
@@ -285,5 +292,29 @@ public class AuthorityInstanceControllerImpl implements AuthorityInstanceControl
     @Override
     public void validateRAProfileAttributes(@PathVariable String uuid, @RequestBody List<RequestAttributeDto> attributes) throws ValidationException, NotFoundException {
         AttributeDefinitionUtils.validateAttributes(listRAProfileAttributes(uuid), attributes);
+    }
+
+    @Override
+    public CertificateRevocationListResponseDto getCrl(String uuid, CertificateRevocationListRequestDto request) throws NotFoundException {
+        NameAndIdDto certificationAuthority = AttributeDefinitionUtils.getNameAndIdData(
+                ATTRIBUTE_CERTIFICATION_AUTHORITY,
+                request.getRaProfileAttributes()
+        );
+        return new CertificateRevocationListResponseDto(
+                ejbcaService.getLatestCRL(uuid, certificationAuthority.getName(), request.isDelta())
+        );
+    }
+
+    @Override
+    public CaCertificatesResponseDto getCaCertificates(String uuid, CaCertificatesRequestDto raProfileAttributes) throws ValidationException, NotFoundException {
+        NameAndIdDto certificationAuthority = AttributeDefinitionUtils.getNameAndIdData(
+                ATTRIBUTE_CERTIFICATION_AUTHORITY,
+                raProfileAttributes.getRaProfileAttributes()
+        );
+        return new CaCertificatesResponseDto(
+                CertificateUtil.convertWSCertificateDataToDto(
+                        ejbcaService.getLastCAChain(uuid, certificationAuthority.getName())
+                )
+        );
     }
 }

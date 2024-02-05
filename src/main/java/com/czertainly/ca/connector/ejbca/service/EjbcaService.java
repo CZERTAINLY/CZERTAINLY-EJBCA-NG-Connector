@@ -10,11 +10,7 @@ import com.czertainly.ca.connector.ejbca.EjbcaException;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificatesRestRequestV2;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.response.SearchCertificatesRestResponseV2;
 import com.czertainly.ca.connector.ejbca.util.EjbcaVersion;
-import com.czertainly.ca.connector.ejbca.ws.AuthorizationDeniedException_Exception;
-import com.czertainly.ca.connector.ejbca.ws.CADoesntExistsException_Exception;
-import com.czertainly.ca.connector.ejbca.ws.CesecoreException_Exception;
-import com.czertainly.ca.connector.ejbca.ws.EjbcaException_Exception;
-import com.czertainly.ca.connector.ejbca.ws.NotFoundException_Exception;
+import com.czertainly.ca.connector.ejbca.ws.*;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
@@ -36,4 +32,8 @@ public interface EjbcaService {
     SearchCertificatesRestResponseV2 searchCertificates(String authorityInstanceUuid, String restUrl, SearchCertificatesRestRequestV2 request) throws Exception;
 
     List<NameAndIdDto> getAvailableCas(String authorityInstanceUuid) throws NotFoundException;
+
+    List<Certificate> getLastCAChain(String authorityInstanceUuid, String caName) throws NotFoundException;
+
+    byte[] getLatestCRL(String authorityInstanceUuid, String caName, boolean deltaCRL) throws NotFoundException;
 }
