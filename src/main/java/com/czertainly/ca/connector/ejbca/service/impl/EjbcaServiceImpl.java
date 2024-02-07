@@ -205,6 +205,32 @@ public class EjbcaServiceImpl implements EjbcaService {
         }
     }
 
+    @Override
+    public List<Certificate> getLastCAChain(String authorityInstanceUuid, String caName) throws NotFoundException {
+        EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityInstanceUuid);
+        try {
+            return ejbcaWS.getLastCAChain(caName);
+        } catch (CADoesntExistsException_Exception e) {
+            throw new NotFoundException("CA", caName);
+        } catch (EjbcaException_Exception e) {
+            throw new IllegalStateException(e);
+        } catch (AuthorizationDeniedException_Exception e) {
+            throw new AccessDeniedException("Authorization denied on EJBCA", e);
+        }
+    }
+
+    @Override
+    public byte[] getLatestCRL(String authorityInstanceUuid, String caName, boolean deltaCRL) throws NotFoundException {
+        EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityInstanceUuid);
+        try {
+            return ejbcaWS.getLatestCRL(caName, deltaCRL);
+        } catch (CADoesntExistsException_Exception e) {
+            throw new NotFoundException("CA", caName);
+        } catch (EjbcaException_Exception e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
     public UserDataVOWS getUser(EjbcaWS ejbcaWS, String username) throws NotFoundException {
         UserMatch userMatch = EjbcaUtils.prepareUsernameMatch(username);
 
