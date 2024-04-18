@@ -89,9 +89,9 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
 
         certificate.setMeta(getIssueMetadata(
                 username,
-                AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EMAIL, request.getRaProfileAttributes(), StringAttributeContent.class).getData(),
-                AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_SAN, request.getRaProfileAttributes(), StringAttributeContent.class).getData(),
-                AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EXTENSION, request.getRaProfileAttributes(), StringAttributeContent.class).getData()
+                AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EMAIL, request.getAttributes(), StringAttributeContent.class).getData(),
+                AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_SAN, request.getAttributes(), StringAttributeContent.class).getData(),
+                AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EXTENSION, request.getAttributes(), StringAttributeContent.class).getData()
         ));
 
         return certificate;
@@ -182,52 +182,58 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         attributes.addAll(getUsernameMetadata(username));
 
         // EMAIL
-        MetadataAttribute emailAttribute = new MetadataAttribute();
-        emailAttribute.setUuid("b42ab942-60fd-11ed-9b6a-0242ac120002");
-        emailAttribute.setName(META_EMAIL);
-        emailAttribute.setDescription("Email");
-        emailAttribute.setType(AttributeType.META);
-        emailAttribute.setContentType(AttributeContentType.STRING);
-        emailAttribute.setContent(List.of(new StringAttributeContent(email)));
+        if (StringUtils.isNotBlank(email)) {
+            MetadataAttribute emailAttribute = new MetadataAttribute();
+            emailAttribute.setUuid("b42ab942-60fd-11ed-9b6a-0242ac120002");
+            emailAttribute.setName(META_EMAIL);
+            emailAttribute.setDescription("Email");
+            emailAttribute.setType(AttributeType.META);
+            emailAttribute.setContentType(AttributeContentType.STRING);
+            emailAttribute.setContent(List.of(new StringAttributeContent(email)));
 
-        MetadataAttributeProperties emailAttributeProperties = new MetadataAttributeProperties();
-        emailAttributeProperties.setVisible(true);
-        emailAttributeProperties.setLabel("Email");
-        emailAttribute.setProperties(emailAttributeProperties);
+            MetadataAttributeProperties emailAttributeProperties = new MetadataAttributeProperties();
+            emailAttributeProperties.setVisible(true);
+            emailAttributeProperties.setLabel("Email");
+            emailAttribute.setProperties(emailAttributeProperties);
 
-        attributes.add(emailAttribute);
+            attributes.add(emailAttribute);
+        }
 
         // SAN Attribute
-        MetadataAttribute sanAttribute = new MetadataAttribute();
-        sanAttribute.setUuid("b42abc58-60fd-11ed-9b6a-0242ac120002");
-        sanAttribute.setName(META_SAN);
-        sanAttribute.setDescription("SAN");
-        sanAttribute.setType(AttributeType.META);
-        sanAttribute.setContentType(AttributeContentType.STRING);
-        sanAttribute.setContent(List.of(new StringAttributeContent(san)));
+        if (StringUtils.isNotBlank(san)) {
+            MetadataAttribute sanAttribute = new MetadataAttribute();
+            sanAttribute.setUuid("b42abc58-60fd-11ed-9b6a-0242ac120002");
+            sanAttribute.setName(META_SAN);
+            sanAttribute.setDescription("SAN");
+            sanAttribute.setType(AttributeType.META);
+            sanAttribute.setContentType(AttributeContentType.STRING);
+            sanAttribute.setContent(List.of(new StringAttributeContent(san)));
 
-        MetadataAttributeProperties sanAttributeProperties = new MetadataAttributeProperties();
-        sanAttributeProperties.setVisible(true);
-        sanAttributeProperties.setLabel("SAN");
-        sanAttribute.setProperties(sanAttributeProperties);
+            MetadataAttributeProperties sanAttributeProperties = new MetadataAttributeProperties();
+            sanAttributeProperties.setVisible(true);
+            sanAttributeProperties.setLabel("SAN");
+            sanAttribute.setProperties(sanAttributeProperties);
 
-        attributes.add(sanAttribute);
+            attributes.add(sanAttribute);
+        }
 
         //Extension
-        MetadataAttribute extensionAttribute = new MetadataAttribute();
-        extensionAttribute.setUuid("b42abe38-60fd-11ed-9b6a-0242ac120002");
-        extensionAttribute.setName(META_EXTENSION);
-        extensionAttribute.setDescription("Extension");
-        extensionAttribute.setType(AttributeType.META);
-        extensionAttribute.setContentType(AttributeContentType.STRING);
-        extensionAttribute.setContent(List.of(new StringAttributeContent(extensions)));
+        if (StringUtils.isNotBlank(extensions)) {
+            MetadataAttribute extensionAttribute = new MetadataAttribute();
+            extensionAttribute.setUuid("b42abe38-60fd-11ed-9b6a-0242ac120002");
+            extensionAttribute.setName(META_EXTENSION);
+            extensionAttribute.setDescription("Extension");
+            extensionAttribute.setType(AttributeType.META);
+            extensionAttribute.setContentType(AttributeContentType.STRING);
+            extensionAttribute.setContent(List.of(new StringAttributeContent(extensions)));
 
-        MetadataAttributeProperties extensionAttributeProperties = new MetadataAttributeProperties();
-        extensionAttributeProperties.setVisible(true);
-        extensionAttributeProperties.setLabel("Extension");
-        extensionAttribute.setProperties(extensionAttributeProperties);
+            MetadataAttributeProperties extensionAttributeProperties = new MetadataAttributeProperties();
+            extensionAttributeProperties.setVisible(true);
+            extensionAttributeProperties.setLabel("Extension");
+            extensionAttribute.setProperties(extensionAttributeProperties);
 
-        attributes.add(extensionAttribute);
+            attributes.add(extensionAttribute);
+        }
 
         return attributes;
     }
@@ -339,7 +345,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         } else { // check the properties of the certificate
             CertificateRestResponseV2 certificate = response.getCertificates().get(0);
             if (certificate.getEndEntityProfileId() == endEntityProfile.getId() &&
-                certificate.getCertificateProfileId() == certificateProfile.getId()
+                    certificate.getCertificateProfileId() == certificateProfile.getId()
                 // we do not need to check the CA, as it should be already checked by the RA Profile
                 // TODO: check the end entity profile for all attributes that are not present in CertificateRestResponseV2
                 // certificate.getSendNotifications() == sendNotifications &&
