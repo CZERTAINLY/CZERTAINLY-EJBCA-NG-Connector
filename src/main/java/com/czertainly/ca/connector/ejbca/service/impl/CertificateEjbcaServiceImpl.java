@@ -17,17 +17,17 @@ import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificatesRes
 import com.czertainly.ca.connector.ejbca.dto.ejbca.response.CertificateRestResponseV2;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.response.SearchCertificatesRestResponseV2;
 import com.czertainly.ca.connector.ejbca.enums.UsernameGenMethod;
+import com.czertainly.ca.connector.ejbca.request.CertificateRequest;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.CertificateEjbcaService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
 import com.czertainly.ca.connector.ejbca.util.CertificateUtil;
-import com.czertainly.ca.connector.ejbca.util.CsrUtil;
+import com.czertainly.ca.connector.ejbca.util.CertificateRequestUtils;
 import com.czertainly.core.util.AttributeDefinitionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.x500.RDN;
 import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,16 +76,17 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         String usernamePrefix = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
         String usernamePostfix = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
 
-        JcaPKCS10CertificationRequest csr = parseCsrToJcaObject(request.getPkcs10());
+        CertificateRequest certificateRequest = CertificateRequestUtils.createCertificateRequest(
+                Base64.getDecoder().decode(request.getRequest()), request.getFormat());
 
-        String username = generateUsername(usernameGenMethod, usernamePrefix, usernamePostfix, csr);
-        String subjectDn = csr.getSubject().toString();
+        String username = generateUsername(usernameGenMethod, usernamePrefix, usernamePostfix, certificateRequest);
+        String subjectDn = certificateRequest.getSubject().toString();
         String password = username;
 
         // try to create end entity and issue certificate
         ejbcaService.createEndEntity(uuid, username, password, subjectDn, request.getRaProfileAttributes(), request.getAttributes());
         // issue certificate
-        CertificateDataResponseDto certificate = ejbcaService.issueCertificate(uuid, username, password, Base64.getEncoder().encodeToString(csr.getEncoded()));
+        CertificateDataResponseDto certificate = ejbcaService.issueCertificate(uuid, username, password, Base64.getEncoder().encodeToString(certificateRequest.getEncoded()), request.getFormat());
 
         certificate.setMeta(getIssueMetadata(
                 username,
@@ -99,7 +100,8 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
 
     @Override
     public CertificateDataResponseDto renewCertificate(String uuid, CertificateRenewRequestDto request) throws Exception {
-        JcaPKCS10CertificationRequest csr = parseCsrToJcaObject(request.getPkcs10());
+        CertificateRequest certificateRequest = CertificateRequestUtils.createCertificateRequest(
+                Base64.getDecoder().decode(request.getRequest()), request.getFormat());
 
         List<MetadataAttribute> metadata = request.getMeta();
 
@@ -112,7 +114,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
             String usernameGenMethod = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_GEN_METHOD, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
             String usernamePrefix = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_PREFIX, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
             String usernamePostfix = AttributeDefinitionUtils.getSingleItemAttributeContentValue(AuthorityInstanceControllerImpl.ATTRIBUTE_USERNAME_POSTFIX, request.getRaProfileAttributes(), StringAttributeContent.class).getData();
-            username = generateUsername(usernameGenMethod, usernamePrefix, usernamePostfix, csr);
+            username = generateUsername(usernameGenMethod, usernamePrefix, usernamePostfix, certificateRequest);
         }
 
         String password = username;
@@ -121,12 +123,12 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
             // update end entity
             ejbcaService.renewEndEntity(uuid, username, password);
         } catch (NotFoundException e) {
-            String subjectDn = csr.getSubject().toString();
+            String subjectDn = certificateRequest.getSubject().toString();
             ejbcaService.createEndEntityWithMeta(uuid, username, password, subjectDn, request.getRaProfileAttributes(), metadata);
         }
 
         // issue certificate
-        CertificateDataResponseDto certificate = ejbcaService.issueCertificate(uuid, username, password, Base64.getEncoder().encodeToString(csr.getEncoded()));
+        CertificateDataResponseDto certificate = ejbcaService.issueCertificate(uuid, username, password, Base64.getEncoder().encodeToString(certificateRequest.getEncoded()), request.getFormat());
 
         List<MetadataAttribute> meta = new ArrayList<>();
         meta.addAll(metadata.stream().filter(e -> !e.getName().equals(META_EJBCA_USERNAME)).collect(Collectors.toList()));
@@ -238,20 +240,7 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
         return attributes;
     }
 
-    private JcaPKCS10CertificationRequest parseCsrToJcaObject(String pkcs10) throws IOException {
-        JcaPKCS10CertificationRequest csr;
-        try {
-            csr = CsrUtil.csrStringToJcaObject(pkcs10);
-        } catch (IOException e) {
-            logger.debug("Failed to parse CSR, will decode and try again...");
-            String decodedPkcs10 = new String(Base64.getDecoder().decode(pkcs10));
-            csr = CsrUtil.csrStringToJcaObject(decodedPkcs10);
-        }
-        return csr;
-    }
-
-    private String generateUsername(String usernameGenMethod, String usernamePrefix, String usernamePostfix, JcaPKCS10CertificationRequest csr) throws Exception {
-        // the csr comes Base64 encoded
+    private String generateUsername(String usernameGenMethod, String usernamePrefix, String usernamePostfix, CertificateRequest csr) throws Exception {
         String username;
         if (usernameGenMethod.equals(UsernameGenMethod.RANDOM.name())) {
             SecureRandom random = new SecureRandom();
