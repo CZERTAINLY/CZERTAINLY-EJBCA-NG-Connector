@@ -2,6 +2,8 @@ package com.czertainly.ca.connector.ejbca.request;
 
 import com.czertainly.api.model.core.enums.CertificateRequestFormat;
 import com.czertainly.ca.connector.ejbca.util.CertificateRequestUtils;
+import org.bouncycastle.asn1.crmf.CertReqMessages;
+import org.bouncycastle.asn1.crmf.CertReqMsg;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.cert.crmf.CRMFException;
 import org.bouncycastle.cert.crmf.jcajce.JcaCertificateRequestMessageBuilder;
@@ -38,7 +40,11 @@ public class CrmfCertificateRequestTest {
                 keyPair,
                 "SHA256withRSA");
 
-        CertificateRequest certificateRequest = CertificateRequestUtils.createCertificateRequest(request, CertificateRequestFormat.CRMF);
+        CertReqMsg certReqMsg = CertReqMsg.getInstance(request);
+        CertReqMessages certReqMessages = new CertReqMessages(certReqMsg);
+
+        CertificateRequest certificateRequest = CertificateRequestUtils.createCertificateRequest(
+                certReqMessages.getEncoded(), CertificateRequestFormat.CRMF);
 
         Assertions.assertInstanceOf(CrmfCertificateRequest.class, certificateRequest);
         Assertions.assertEquals(new X500Name("CN=Example"), certificateRequest.getSubject());
