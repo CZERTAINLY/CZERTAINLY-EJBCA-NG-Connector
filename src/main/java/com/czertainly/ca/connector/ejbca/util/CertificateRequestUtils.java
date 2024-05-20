@@ -2,6 +2,10 @@ package com.czertainly.ca.connector.ejbca.util;
 
 import java.io.IOException;
 
+import com.czertainly.api.model.core.enums.CertificateRequestFormat;
+import com.czertainly.ca.connector.ejbca.request.CertificateRequest;
+import com.czertainly.ca.connector.ejbca.request.CrmfCertificateRequest;
+import com.czertainly.ca.connector.ejbca.request.Pkcs10CertificateRequest;
 import org.bouncycastle.asn1.pkcs.Attribute;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x509.Extension;
@@ -16,9 +20,9 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
-public class CsrUtil {
+public class CertificateRequestUtils {
 
-    private static final Logger logger = LoggerFactory.getLogger(CsrUtil.class);
+    private static final Logger logger = LoggerFactory.getLogger(CertificateRequestUtils.class);
 
     public static JcaPKCS10CertificationRequest csrStringToJcaObject(String csr) throws IOException {
         csr = csr.replace("-----BEGIN CERTIFICATE REQUEST-----", "")
@@ -52,5 +56,13 @@ public class CsrUtil {
             }
         }
         return sans;
+    }
+
+    public static CertificateRequest createCertificateRequest(byte[] csr, CertificateRequestFormat format) {
+        return switch (format) {
+            case PKCS10 -> new Pkcs10CertificateRequest(csr);
+            case CRMF -> new CrmfCertificateRequest(csr);
+            default -> throw new IllegalArgumentException("Unsupported certificate request format: " + format);
+        };
     }
 }

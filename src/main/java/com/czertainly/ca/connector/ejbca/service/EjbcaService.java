@@ -6,6 +6,7 @@ import com.czertainly.api.model.client.attribute.RequestAttributeDto;
 import com.czertainly.api.model.common.NameAndIdDto;
 import com.czertainly.api.model.common.attribute.v2.MetadataAttribute;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
+import com.czertainly.api.model.core.enums.CertificateRequestFormat;
 import com.czertainly.ca.connector.ejbca.EjbcaException;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificatesRestRequestV2;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.response.SearchCertificatesRestResponseV2;
@@ -23,7 +24,7 @@ public interface EjbcaService {
 
     void renewEndEntity(String authorityUuid, String username, String password) throws NotFoundException;
 
-    CertificateDataResponseDto issueCertificate(String authorityUuid, String username, String password, String pkcs10) throws NotFoundException, CADoesntExistsException_Exception, EjbcaException_Exception, AuthorizationDeniedException_Exception, NotFoundException_Exception, CesecoreException_Exception;
+    CertificateDataResponseDto issueCertificate(String authorityUuid, String username, String password, String certificateRequest, CertificateRequestFormat requestFormat) throws NotFoundException, CADoesntExistsException_Exception, EjbcaException_Exception, AuthorizationDeniedException_Exception, NotFoundException_Exception, CesecoreException_Exception;
 
     void revokeCertificate(String uuid, String issuerDn, String serialNumber, int revocationReason) throws NotFoundException, AccessDeniedException;
 

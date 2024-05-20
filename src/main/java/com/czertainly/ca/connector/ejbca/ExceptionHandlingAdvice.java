@@ -7,6 +7,7 @@ import com.czertainly.api.exception.NotFoundException;
 import com.czertainly.api.exception.ValidationError;
 import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.model.common.ErrorMessageDto;
+import com.czertainly.ca.connector.ejbca.exception.CertificateRequestException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -121,6 +122,20 @@ public class ExceptionHandlingAdvice {
     })
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorMessageDto handleMessageNotReadable(CertificateOperationException ex) {
+        LOG.info("HTTP 400: {}", ex.getMessage());
+        return ErrorMessageDto.getInstance(ex.getMessage());
+    }
+
+    /**
+     * Handler for {@link CertificateRequestException}.
+     *
+     * @return
+     */
+    @ExceptionHandler({
+            CertificateRequestException.class
+    })
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorMessageDto handleMessageNotReadable(CertificateRequestException ex) {
         LOG.info("HTTP 400: {}", ex.getMessage());
         return ErrorMessageDto.getInstance(ex.getMessage());
     }
