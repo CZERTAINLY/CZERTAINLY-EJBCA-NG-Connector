@@ -8,10 +8,12 @@ import com.czertainly.api.model.common.attribute.v2.MetadataAttribute;
 import com.czertainly.api.model.common.attribute.v2.content.BooleanAttributeContent;
 import com.czertainly.api.model.common.attribute.v2.content.StringAttributeContent;
 import com.czertainly.api.model.connector.v2.CertificateDataResponseDto;
+import com.czertainly.api.model.core.enums.CertificateRequestFormat;
 import com.czertainly.ca.connector.ejbca.EjbcaException;
 import com.czertainly.ca.connector.ejbca.api.CertificateControllerImpl;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.request.SearchCertificatesRestRequestV2;
 import com.czertainly.ca.connector.ejbca.dto.ejbca.response.SearchCertificatesRestResponseV2;
+import com.czertainly.ca.connector.ejbca.exception.CertificateRequestException;
 import com.czertainly.ca.connector.ejbca.service.AuthorityInstanceService;
 import com.czertainly.ca.connector.ejbca.service.EjbcaService;
 import com.czertainly.ca.connector.ejbca.util.EjbcaUtils;
@@ -124,16 +126,29 @@ public class EjbcaServiceImpl implements EjbcaService {
     }
 
     @Override
-    public CertificateDataResponseDto issueCertificate(String authorityUuid, String username, String password, String pkcs10) throws NotFoundException {
+    public CertificateDataResponseDto issueCertificate(String authorityUuid, String username, String password, String certificateRequest, CertificateRequestFormat requestFormat) throws NotFoundException {
         EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityUuid);
 
         try {
-            CertificateResponse certificateResponse = ejbcaWS.pkcs10Request(
-                    username,
-                    password,
-                    pkcs10,
-                    null,
-                    "PKCS7WITHCHAIN"); // constant for PKCS7 with chain
+            CertificateResponse certificateResponse;
+            if (requestFormat == CertificateRequestFormat.CRMF) {
+                certificateResponse = ejbcaWS.crmfRequest(
+                        username,
+                        password,
+                        certificateRequest,
+                        null,
+                        "PKCS7WITHCHAIN");
+            } else if (requestFormat == CertificateRequestFormat.PKCS10) {
+                certificateResponse = ejbcaWS.pkcs10Request(
+                        username,
+                        password,
+                        certificateRequest,
+                        null,
+                        "PKCS7WITHCHAIN");
+            } else {
+                // we should not get here anyway
+                throw new CertificateRequestException("Unsupported certificate request format");
+            }
             CertificateDataResponseDto response = new CertificateDataResponseDto();
             response.setCertificateData(new String(certificateResponse.getData(), StandardCharsets.UTF_8));
             return response;
