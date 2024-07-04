@@ -27,19 +27,29 @@ import java.util.Set;
 public class AttributeServiceImpl implements AttributeService {
 	private static final Logger logger = LoggerFactory.getLogger(AttributesController.class);
 
+    public static final String DATA_ATTRIBUTE_URL_NAME = "url";
+    public static final String DATA_ATTRIBUTE_URL_UUID = "87e968ca-9404-4128-8b58-3ab5db2ba06e";
+    public static final String DATA_ATTRIBUTE_URL_LABEL = "EJBCA WS URL";
+    public static final String DATA_ATTRIBUTE_URL_DESCRIPTION = "URL of EJBCA web services";
+
+    public static final String DATA_ATTRIBUTE_CREDENTIAL_NAME = "credential";
+    public static final String DATA_ATTRIBUTE_CREDENTIAL_UUID = "9379ca2c-aa51-42c8-8afd-2a2d16c99c57";
+    public static final String DATA_ATTRIBUTE_CREDENTIAL_LABEL = "Credential";
+    public static final String DATA_ATTRIBUTE_CREDENTIAL_DESCRIPTION = "SoftKeyStore Credential representing EJBCA administrator for the communication";
+
 	@Override
 	public List<BaseAttribute> getAttributes(String kind) {
 		logger.debug("Getting the attributes for {}", kind);
 		List<BaseAttribute> attrs = new ArrayList<>();
 
         DataAttribute url = new DataAttribute();
-        url.setUuid("87e968ca-9404-4128-8b58-3ab5db2ba06e");
-        url.setName("url");
-        url.setDescription("URL of EJBCA web services");
+        url.setUuid(DATA_ATTRIBUTE_URL_UUID);
+        url.setName(DATA_ATTRIBUTE_URL_NAME);
+        url.setDescription(DATA_ATTRIBUTE_URL_DESCRIPTION);
         url.setType(AttributeType.DATA);
         url.setContentType(AttributeContentType.STRING);
         DataAttributeProperties urlProperties = new DataAttributeProperties();
-        urlProperties.setLabel("EJBCA WS URL");
+        urlProperties.setLabel(DATA_ATTRIBUTE_URL_LABEL);
         urlProperties.setRequired(true);
         urlProperties.setReadOnly(false);
         urlProperties.setVisible(true);
@@ -49,13 +59,13 @@ public class AttributeServiceImpl implements AttributeService {
         attrs.add(url);
 
         DataAttribute credential = new DataAttribute();
-        credential.setUuid("9379ca2c-aa51-42c8-8afd-2a2d16c99c57");
-        credential.setName("credential");
-        credential.setDescription("SoftKeyStore Credential representing EJBCA administrator for the communication");
+        credential.setUuid(DATA_ATTRIBUTE_CREDENTIAL_UUID);
+        credential.setName(DATA_ATTRIBUTE_CREDENTIAL_NAME);
+        credential.setDescription(DATA_ATTRIBUTE_CREDENTIAL_DESCRIPTION);
         credential.setType(AttributeType.DATA);
         credential.setContentType(AttributeContentType.CREDENTIAL);
         DataAttributeProperties credentialProperties = new DataAttributeProperties();
-        credentialProperties.setLabel("Credential");
+        credentialProperties.setLabel(DATA_ATTRIBUTE_CREDENTIAL_LABEL);
         credentialProperties.setRequired(true);
         credentialProperties.setReadOnly(false);
         credentialProperties.setVisible(true);
