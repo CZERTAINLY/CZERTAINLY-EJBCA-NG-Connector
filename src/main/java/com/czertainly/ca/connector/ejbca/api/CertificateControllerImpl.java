@@ -30,6 +30,11 @@ public class CertificateControllerImpl implements CertificateController {
     public static final String ATTRIBUTE_EMAIL_LABEL = "Email";
     public static final String ATTRIBUTE_SAN_LABEL = "Subject Alternative Name";
     public static final String ATTRIBUTE_EXTENSION_LABEL = "Extension Data";
+
+    public static final String ATTRIBUTE_EMAIL_UUID = "0b378474-ebe9-4a17-9d3d-0577eb16aa34";
+    public static final String ATTRIBUTE_SAN_UUID = "2cfd8c1a-e867-42f1-ab6c-67fb1964e163";
+    public static final String ATTRIBUTE_EXTENSION_UUID = "72324d22-12cb-47ee-a02e-0b1da2013eee";
+
     private CertificateEjbcaService certificateEjbcaService;
 
     @Autowired
@@ -42,7 +47,7 @@ public class CertificateControllerImpl implements CertificateController {
         List<BaseAttribute> attrs = new ArrayList<>();
 
         DataAttribute email = new DataAttribute();
-        email.setUuid("0b378474-ebe9-4a17-9d3d-0577eb16aa34");
+        email.setUuid(ATTRIBUTE_EMAIL_UUID);
         email.setName(ATTRIBUTE_EMAIL);
         email.setDescription("End Entity email address");
         email.setType(AttributeType.DATA);
@@ -58,7 +63,7 @@ public class CertificateControllerImpl implements CertificateController {
         attrs.add(email);
 
         DataAttribute san = new DataAttribute();
-        san.setUuid("2cfd8c1a-e867-42f1-ab6c-67fb1964e163");
+        san.setUuid(ATTRIBUTE_SAN_UUID);
         san.setName(ATTRIBUTE_SAN);
         san.setDescription("Comma separated Subject Alternative Names");
         san.setType(AttributeType.DATA);
@@ -74,9 +79,9 @@ public class CertificateControllerImpl implements CertificateController {
         attrs.add(san);
 
         DataAttribute extension = new DataAttribute();
-        extension.setUuid("72324d22-12cb-47ee-a02e-0b1da2013eee");
+        extension.setUuid(ATTRIBUTE_EXTENSION_UUID);
         extension.setName(ATTRIBUTE_EXTENSION);
-        extension.setDescription("Comma separated Extension Data");
+        extension.setDescription("Comma separated Extension Data in the format OID=Value");
         extension.setType(AttributeType.DATA);
         extension.setContentType(AttributeContentType.STRING);
         DataAttributeProperties extensionProperties = new DataAttributeProperties();

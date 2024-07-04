@@ -30,7 +30,6 @@ import org.springframework.web.reactive.function.UnsupportedMediaTypeException;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -275,7 +274,7 @@ public class EjbcaServiceImpl implements EjbcaService {
         }
 
         String extension = AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateControllerImpl.ATTRIBUTE_EXTENSION, issueAttrs, StringAttributeContent.class).getData();
-        setUserExtensions(user, extension);
+        EjbcaUtils.setUserExtensions(user, extension);
     }
 
     private void prepareEndEntityWithMeta(UserDataVOWS user, List<RequestAttributeDto> raProfileAttrs, List<MetadataAttribute> metadata) {
@@ -292,7 +291,7 @@ public class EjbcaServiceImpl implements EjbcaService {
         }
 
         String extension = AttributeDefinitionUtils.getSingleItemAttributeContentValue(CertificateEjbcaServiceImpl.META_EXTENSION, metadata, StringAttributeContent.class).getData();
-        setUserExtensions(user, extension);
+        EjbcaUtils.setUserExtensions(user, extension);
     }
 
     private void setUserProfiles(UserDataVOWS user, List<RequestAttributeDto> raProfileAttrs) {
@@ -324,19 +323,4 @@ public class EjbcaServiceImpl implements EjbcaService {
         user.setKeyRecoverable(keyRecoverable);
     }
 
-    private void setUserExtensions(UserDataVOWS user, String extension) {
-        if (StringUtils.isNotBlank(extension)) {
-            List<ExtendedInformationWS> ei = new ArrayList<>();
-            String[] extensions = extension.split(",[ ]*"); // remove spaces after the comma
-            for (String data : extensions) {
-                String[] extValue = data.split("=", 2); // split the string using = to 2 values
-                // TODO: validation of the data
-                ExtendedInformationWS eiWs = new ExtendedInformationWS();
-                eiWs.setName(extValue[0]);
-                eiWs.setValue(extValue[1]);
-                ei.add(eiWs);
-            }
-            user.getExtendedInformation().addAll(ei);
-        }
-    }
 }
