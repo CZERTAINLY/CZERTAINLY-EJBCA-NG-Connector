@@ -1,15 +1,15 @@
 # Build stage
-FROM maven:3.8.7-eclipse-temurin-17 as build
+FROM maven:3.9.9-eclipse-temurin-21 as build
 COPY src /home/app/src
 COPY pom.xml /home/app
 COPY settings.xml /root/.m2/settings.xml
+COPY docker /home/app/docker
 ARG SERVER_USERNAME
 ARG SERVER_PASSWORD
 RUN mvn -f /home/app/pom.xml clean package
-COPY docker /home/app/docker
 
 # Package stage
-FROM eclipse-temurin:17.0.10_7-jre-alpine
+FROM eclipse-temurin:21.0.4_7-jre-alpine
 
 MAINTAINER CZERTAINLY <support@czertainly.com>
 
