@@ -4,8 +4,6 @@ COPY src /home/app/src
 COPY pom.xml /home/app
 COPY settings.xml /root/.m2/settings.xml
 COPY docker /home/app/docker
-ARG SERVER_USERNAME
-ARG SERVER_PASSWORD
 RUN mvn -f /home/app/pom.xml clean package
 
 # Package stage
