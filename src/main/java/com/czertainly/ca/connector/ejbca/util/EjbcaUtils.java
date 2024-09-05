@@ -1,13 +1,13 @@
 package com.czertainly.ca.connector.ejbca.util;
 
+import com.czertainly.api.exception.ValidationException;
 import com.czertainly.api.model.core.authority.EndEntityDto;
 import com.czertainly.api.model.core.authority.EndEntityExtendedInfoDto;
 import com.czertainly.api.model.core.authority.EndEntityStatus;
-import com.czertainly.ca.connector.ejbca.ws.MatchType;
-import com.czertainly.ca.connector.ejbca.ws.MatchWith;
-import com.czertainly.ca.connector.ejbca.ws.UserDataVOWS;
-import com.czertainly.ca.connector.ejbca.ws.UserMatch;
+import com.czertainly.ca.connector.ejbca.ws.*;
+import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -45,4 +45,31 @@ public class EjbcaUtils {
         }
         return userDetailDTO;
     }
+
+    public static void setUserExtensions(UserDataVOWS user, String extension) {
+        if (StringUtils.isNotBlank(extension)) {
+            List<ExtendedInformationWS> ei = new ArrayList<>();
+            String[] extensions = extension.split(", *"); // remove spaces after the comma
+            for (String data : extensions) {
+                String[] extValue = data.split("=", 2); // split the string using = to 2 values
+
+                // Validation of the data
+                if (extValue.length != 2) {
+                    throw new ValidationException("Invalid extension format: " + data);
+                }
+
+                String key = extValue[0].trim();
+                String value = extValue[1].trim();
+
+                OidUtils.validateOidFormat(key);
+
+                ExtendedInformationWS eiWs = new ExtendedInformationWS();
+                eiWs.setName(key);
+                eiWs.setValue(value);
+                ei.add(eiWs);
+            }
+            user.getExtendedInformation().addAll(ei);
+        }
+    }
+
 }
