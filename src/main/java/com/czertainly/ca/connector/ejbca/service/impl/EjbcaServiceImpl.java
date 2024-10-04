@@ -51,7 +51,7 @@ public class EjbcaServiceImpl implements EjbcaService {
     }
 
     @Override
-    public void createEndEntity(String authorityUuid, String username, String password, String subjectDn, List<RequestAttributeDto> raProfileAttributes, List<RequestAttributeDto> issueAttributes) throws NotFoundException, AlreadyExistException, EjbcaException {
+    public void createEndEntity(String authorityUuid, String username, String password, String subjectDn, String subjectAltName, List<RequestAttributeDto> raProfileAttributes, List<RequestAttributeDto> issueAttributes) throws NotFoundException, AlreadyExistException, EjbcaException {
         EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityUuid);
 
         if (getUser(ejbcaWS, username) != null) {
@@ -62,6 +62,8 @@ public class EjbcaServiceImpl implements EjbcaService {
         user.setUsername(username);
         user.setPassword(password);
         user.setSubjectDN(subjectDn);
+        user.setSubjectAltName(subjectAltName);
+
         prepareEndEntity(user, raProfileAttributes, issueAttributes);
 
         try {
@@ -78,7 +80,7 @@ public class EjbcaServiceImpl implements EjbcaService {
     }
 
     @Override
-    public void createEndEntityWithMeta(String authorityUuid, String username, String password, String subjectDn, List<RequestAttributeDto> raProfileAttributes, List<MetadataAttribute> metadata) throws NotFoundException, AlreadyExistException {
+    public void createEndEntityWithMeta(String authorityUuid, String username, String password, String subjectDn, String subjectAltName, List<RequestAttributeDto> raProfileAttributes, List<MetadataAttribute> metadata) throws NotFoundException, AlreadyExistException {
         EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityUuid);
 
         if (getUser(ejbcaWS, username) != null) {
@@ -89,6 +91,8 @@ public class EjbcaServiceImpl implements EjbcaService {
         user.setUsername(username);
         user.setPassword(password);
         user.setSubjectDN(subjectDn);
+        user.setSubjectAltName(subjectAltName);
+
         prepareEndEntityWithMeta(user, raProfileAttributes, metadata);
 
         try {
@@ -102,7 +106,7 @@ public class EjbcaServiceImpl implements EjbcaService {
         }
     }
 
-    public void renewEndEntity(String authorityUuid, String username, String password) throws NotFoundException {
+    public void renewEndEntity(String authorityUuid, String username, String password, String subjectDn, String subjectAltName) throws NotFoundException {
         EjbcaWS ejbcaWS = authorityInstanceService.getConnection(authorityUuid);
 
         UserDataVOWS user = getUser(ejbcaWS, username);
@@ -112,6 +116,8 @@ public class EjbcaServiceImpl implements EjbcaService {
 
         user.setPassword(password);
         user.setStatus(EndEntityStatus.NEW.getCode());
+        user.setSubjectDN(subjectDn);
+        user.setSubjectAltName(subjectAltName);
 
         try {
             ejbcaWS.editUser(user);
