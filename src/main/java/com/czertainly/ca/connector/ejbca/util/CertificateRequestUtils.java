@@ -6,12 +6,15 @@ import com.czertainly.api.model.core.enums.CertificateRequestFormat;
 import com.czertainly.ca.connector.ejbca.request.CertificateRequest;
 import com.czertainly.ca.connector.ejbca.request.CrmfCertificateRequest;
 import com.czertainly.ca.connector.ejbca.request.Pkcs10CertificateRequest;
+import com.keyfactor.util.CertTools;
+import com.keyfactor.util.certificate.DnComponents;
 import org.bouncycastle.asn1.pkcs.Attribute;
 import org.bouncycastle.asn1.pkcs.PKCSObjectIdentifiers;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.Extensions;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.asn1.x509.GeneralNames;
+import org.bouncycastle.pkcs.PKCS10CertificationRequest;
 import org.bouncycastle.pkcs.jcajce.JcaPKCS10CertificationRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,5 +67,18 @@ public class CertificateRequestUtils {
             case CRMF -> new CrmfCertificateRequest(csr);
             default -> throw new IllegalArgumentException("Unsupported certificate request format: " + format);
         };
+    }
+
+    public static String getEjbcaSanExtension(CertificateRequest certificateRequest) throws IOException {
+        if (certificateRequest != null) {
+            if (certificateRequest.getFormat() == CertificateRequestFormat.PKCS10) {
+                final PKCS10CertificationRequest pkcs10CertificateRequest = new PKCS10CertificationRequest(certificateRequest.getEncoded());
+                final Extension sanExtension = CertTools.getExtension(pkcs10CertificateRequest, Extension.subjectAlternativeName.getId());
+                if (sanExtension != null) {
+                    return DnComponents.getAltNameStringFromExtension(sanExtension);
+                }
+            }
+        }
+        return null;
     }
 }

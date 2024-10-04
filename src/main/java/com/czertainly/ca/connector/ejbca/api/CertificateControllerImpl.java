@@ -65,7 +65,7 @@ public class CertificateControllerImpl implements CertificateController {
         DataAttribute san = new DataAttribute();
         san.setUuid(ATTRIBUTE_SAN_UUID);
         san.setName(ATTRIBUTE_SAN);
-        san.setDescription("Comma separated Subject Alternative Names");
+        san.setDescription("Comma separated Subject Alternative Names. If present, it will override the SANs in the CSR");
         san.setType(AttributeType.DATA);
         san.setContentType(AttributeContentType.STRING);
         DataAttributeProperties sanProperties = new DataAttributeProperties();

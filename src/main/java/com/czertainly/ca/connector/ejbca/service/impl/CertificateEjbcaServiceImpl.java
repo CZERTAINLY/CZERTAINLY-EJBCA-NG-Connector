@@ -81,10 +81,11 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
 
         String username = generateUsername(usernameGenMethod, usernamePrefix, usernamePostfix, certificateRequest);
         String subjectDn = certificateRequest.getSubject().toString();
+        String subjectAltName = CertificateRequestUtils.getEjbcaSanExtension(certificateRequest);
         String password = username;
 
         // try to create end entity and issue certificate
-        ejbcaService.createEndEntity(uuid, username, password, subjectDn, request.getRaProfileAttributes(), request.getAttributes());
+        ejbcaService.createEndEntity(uuid, username, password, subjectDn, subjectAltName, request.getRaProfileAttributes(), request.getAttributes());
         // issue certificate
         CertificateDataResponseDto certificate = ejbcaService.issueCertificate(uuid, username, password, Base64.getEncoder().encodeToString(certificateRequest.getEncoded()), request.getFormat());
 
@@ -117,14 +118,15 @@ public class CertificateEjbcaServiceImpl implements CertificateEjbcaService {
             username = generateUsername(usernameGenMethod, usernamePrefix, usernamePostfix, certificateRequest);
         }
 
+        String subjectDn = certificateRequest.getSubject().toString();
+        String subjectAltName = CertificateRequestUtils.getEjbcaSanExtension(certificateRequest);
         String password = username;
 
         try {
             // update end entity
-            ejbcaService.renewEndEntity(uuid, username, password);
+            ejbcaService.renewEndEntity(uuid, username, password, subjectDn, subjectAltName);
         } catch (NotFoundException e) {
-            String subjectDn = certificateRequest.getSubject().toString();
-            ejbcaService.createEndEntityWithMeta(uuid, username, password, subjectDn, request.getRaProfileAttributes(), metadata);
+            ejbcaService.createEndEntityWithMeta(uuid, username, password, subjectDn, subjectAltName, request.getRaProfileAttributes(), metadata);
         }
 
         // issue certificate
