@@ -146,9 +146,9 @@ public class ExceptionHandlingAdvice {
      * @return
      */
     @ExceptionHandler(RuntimeException.class)
-    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorMessageDto handleRuntimeException(RuntimeException ex) {
-        LOG.info("HTTP 422: {}", ex.getMessage());
+        LOG.info("HTTP 400: {}", ex.getMessage());
         return ErrorMessageDto.getInstance(ex.getMessage());
     }
 
