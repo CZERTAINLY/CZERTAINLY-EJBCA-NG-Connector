@@ -87,7 +87,7 @@ jobs:
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
         restore-keys: ${{ runner.os }}-m2
     - name: Install custom dependencies
-      run: ./ejbca-libs/maven-install-file.sh
+      run: ./ejbca-libs/maven-install-files.sh
     - name: Build
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
