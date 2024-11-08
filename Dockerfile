@@ -4,6 +4,8 @@ COPY src /home/app/src
 COPY pom.xml /home/app
 COPY settings.xml /root/.m2/settings.xml
 COPY docker /home/app/docker
+COPY ejbca-libs /home/app/ejbca-libs
+RUN /home/app/ejbca-libs/maven-install-files.sh
 RUN mvn -f /home/app/pom.xml clean package
 
 # Package stage
