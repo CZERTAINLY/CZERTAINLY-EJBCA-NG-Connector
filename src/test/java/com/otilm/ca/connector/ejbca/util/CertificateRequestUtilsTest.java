@@ -152,7 +152,7 @@ class CertificateRequestUtilsTest {
 
     @Test
     void extractSanFromCsr_dnsName_returnsDnsBranch() throws Exception {
-        JcaPKCS10CertificationRequest jcaReq = buildCsrWithSan(
+        JcaPKCS10CertificationRequest jcaReq = buildCsrWithSans(
                 new GeneralName(GeneralName.dNSName, "dns.example.com"));
 
         List<String> sans = CertificateRequestUtils.extractSanFromCsr(jcaReq);
@@ -164,7 +164,7 @@ class CertificateRequestUtilsTest {
     @Test
     void extractSanFromCsr_ipAddress_returnsIpBranch() throws Exception {
         byte[] ipBytes = InetAddress.getByName("192.168.1.1").getAddress();
-        JcaPKCS10CertificationRequest jcaReq = buildCsrWithSan(
+        JcaPKCS10CertificationRequest jcaReq = buildCsrWithSans(
                 new GeneralName(GeneralName.iPAddress, new DEROctetString(ipBytes)));
 
         List<String> sans = CertificateRequestUtils.extractSanFromCsr(jcaReq);
@@ -180,7 +180,7 @@ class CertificateRequestUtilsTest {
         org.bouncycastle.asn1.ASN1Encodable value = new org.bouncycastle.asn1.DERTaggedObject(true, 0, new DERUTF8String("testValue"));
         GeneralName otherNameGn = new GeneralName(GeneralName.otherName, new DERSequence(new org.bouncycastle.asn1.ASN1Encodable[]{oid, value}));
 
-        JcaPKCS10CertificationRequest jcaReq = buildCsrWithSan(otherNameGn);
+        JcaPKCS10CertificationRequest jcaReq = buildCsrWithSans(otherNameGn);
 
         List<String> sans = CertificateRequestUtils.extractSanFromCsr(jcaReq);
 
@@ -197,15 +197,135 @@ class CertificateRequestUtilsTest {
         assertTrue(sans.isEmpty());
     }
 
-    // ---- helper ----
+    // ---- getEjbcaSanExtension: one case per GeneralName type ----
+    // The expected strings are the format EJBCA's end-entity API accepts, recorded from the
+    // previous implementation's output. The inconsistent casing is deliberate.
 
-    private JcaPKCS10CertificationRequest buildCsrWithSan(GeneralName generalName)
+    @Test
+    void getEjbcaSanExtension_ipv4_returnsDottedQuad() throws Exception {
+        assertEquals("iPAddress=192.168.1.1", ejbcaSan(
+                new GeneralName(GeneralName.iPAddress, new DEROctetString(InetAddress.getByName("192.168.1.1").getAddress()))));
+    }
+
+    @Test
+    void getEjbcaSanExtension_ipv6_returnsUncompressedGroups() throws Exception {
+        assertEquals("iPAddress=2001:db8:0:0:0:0:0:1", ejbcaSan(
+                new GeneralName(GeneralName.iPAddress, new DEROctetString(InetAddress.getByName("2001:db8::1").getAddress()))));
+    }
+
+    @Test
+    void getEjbcaSanExtension_rfc822Name_usesLowerCaseKey() throws Exception {
+        assertEquals("rfc822name=user@example.com", ejbcaSan(
+                new GeneralName(GeneralName.rfc822Name, "user@example.com")));
+    }
+
+    @Test
+    void getEjbcaSanExtension_uri_usesUpperCaseKey() throws Exception {
+        assertEquals("UNIFORMRESOURCEIDENTIFIER=https://example.com/x", ejbcaSan(
+                new GeneralName(GeneralName.uniformResourceIdentifier, "https://example.com/x")));
+    }
+
+    @Test
+    void getEjbcaSanExtension_directoryName_escapesCommas() throws Exception {
+        assertEquals("DIRECTORYNAME=CN=Dir\\,O=Org", ejbcaSan(
+                new GeneralName(GeneralName.directoryName, new X500Name("CN=Dir,O=Org"))));
+    }
+
+    @Test
+    void getEjbcaSanExtension_registeredId_returnsOid() throws Exception {
+        assertEquals("registeredID=1.2.3.4", ejbcaSan(
+                new GeneralName(GeneralName.registeredID, new org.bouncycastle.asn1.ASN1ObjectIdentifier("1.2.3.4"))));
+    }
+
+    @Test
+    void getEjbcaSanExtension_msUpn_returnsUpnKey() throws Exception {
+        assertEquals("UPN=upn@example.com", ejbcaSan(otherName("1.3.6.1.4.1.311.20.2.3", "upn@example.com")));
+    }
+
+    @Test
+    void getEjbcaSanExtension_xmppAddr_returnsXmppKey() throws Exception {
+        assertEquals("XMPPADDR=user@xmpp.example", ejbcaSan(otherName("1.3.6.1.5.5.7.8.5", "user@xmpp.example")));
+    }
+
+    @Test
+    void getEjbcaSanExtension_srvName_returnsSrvKey() throws Exception {
+        assertEquals("SRVNAME=_svc.example.com", ejbcaSan(otherName("1.3.6.1.5.5.7.8.7", "_svc.example.com")));
+    }
+
+    @Test
+    void getEjbcaSanExtension_unsupportedOtherName_isSkippedNotSerialisedAsNull() throws Exception {
+        assertNull(ejbcaSan(otherName("1.2.3.4.5.6.7.8.9", "someValue")));
+    }
+
+    @Test
+    void getEjbcaSanExtension_unsupportedType_isSkipped() throws Exception {
+        assertNull(ejbcaSan(new GeneralName(GeneralName.x400Address, new DERSequence())));
+    }
+
+    @Test
+    void getEjbcaSanExtension_multipleNames_joinsPreservingOrder() throws Exception {
+        JcaPKCS10CertificationRequest csr = buildCsrWithSans(
+                new GeneralName(GeneralName.dNSName, "a.example.com"),
+                new GeneralName(GeneralName.rfc822Name, "u@example.com"),
+                new GeneralName(GeneralName.iPAddress, new DEROctetString(InetAddress.getByName("10.0.0.1").getAddress())),
+                new GeneralName(GeneralName.dNSName, "b.example.com"));
+        CertificateRequest request = CertificateRequestUtils.createCertificateRequest(csr.getEncoded(), CertificateRequestFormat.PKCS10);
+
+        assertEquals("dNSName=a.example.com, rfc822name=u@example.com, iPAddress=10.0.0.1, dNSName=b.example.com",
+                CertificateRequestUtils.getEjbcaSanExtension(request));
+    }
+
+    @Test
+    void getEjbcaSanExtension_supportedNameAmongUnsupported_keepsTheSupportedOne() throws Exception {
+        JcaPKCS10CertificationRequest csr = buildCsrWithSans(
+                new GeneralName(GeneralName.x400Address, new DERSequence()),
+                new GeneralName(GeneralName.dNSName, "kept.example.com"));
+        CertificateRequest request = CertificateRequestUtils.createCertificateRequest(csr.getEncoded(), CertificateRequestFormat.PKCS10);
+
+        assertEquals("dNSName=kept.example.com", CertificateRequestUtils.getEjbcaSanExtension(request));
+    }
+
+    @Test
+    void getEjbcaSanExtension_crmfFormat_returnsNull() throws Exception {
+        KeyPairGenerator kpGen = KeyPairGenerator.getInstance("RSA", "BC");
+        kpGen.initialize(new RSAKeyGenParameterSpec(2048, RSAKeyGenParameterSpec.F4));
+        KeyPair keyPair = kpGen.generateKeyPair();
+        org.bouncycastle.cert.crmf.jcajce.JcaCertificateRequestMessageBuilder builder =
+                new org.bouncycastle.cert.crmf.jcajce.JcaCertificateRequestMessageBuilder(java.math.BigInteger.ONE);
+        builder.setPublicKey(keyPair.getPublic());
+        builder.setSubject(new X500Name("CN=CrmfSan"));
+        builder.setProofOfPossessionSigningKeySigner(
+                new JcaContentSignerBuilder("SHA256withRSA").setProvider("BC").build(keyPair.getPrivate()));
+        org.bouncycastle.asn1.crmf.CertReqMsg certReqMsg =
+                org.bouncycastle.asn1.crmf.CertReqMsg.getInstance(builder.build().getEncoded());
+        byte[] crmfBytes = new org.bouncycastle.asn1.crmf.CertReqMessages(certReqMsg).getEncoded();
+
+        CertificateRequest request = CertificateRequestUtils.createCertificateRequest(crmfBytes, CertificateRequestFormat.CRMF);
+
+        assertNull(CertificateRequestUtils.getEjbcaSanExtension(request));
+    }
+
+    // ---- helpers ----
+
+    private String ejbcaSan(GeneralName generalName) throws Exception {
+        JcaPKCS10CertificationRequest csr = buildCsrWithSans(generalName);
+        CertificateRequest request = CertificateRequestUtils.createCertificateRequest(csr.getEncoded(), CertificateRequestFormat.PKCS10);
+        return CertificateRequestUtils.getEjbcaSanExtension(request);
+    }
+
+    private static GeneralName otherName(String oid, String value) {
+        return new GeneralName(GeneralName.otherName, new DERSequence(new org.bouncycastle.asn1.ASN1Encodable[]{
+                new org.bouncycastle.asn1.ASN1ObjectIdentifier(oid),
+                new org.bouncycastle.asn1.DERTaggedObject(true, 0, new DERUTF8String(value))}));
+    }
+
+    private JcaPKCS10CertificationRequest buildCsrWithSans(GeneralName... generalNames)
             throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException,
             IOException, OperatorCreationException {
         X500Name subject = new X500Name("CN=SanTest");
         PKCS10CertificationRequestBuilder builder = new JcaPKCS10CertificationRequestBuilder(subject, sharedKeyPair.getPublic());
         ExtensionsGenerator extGen = new ExtensionsGenerator();
-        extGen.addExtension(Extension.subjectAlternativeName, false, new GeneralNames(generalName));
+        extGen.addExtension(Extension.subjectAlternativeName, false, new GeneralNames(generalNames));
         builder.addAttribute(PKCSObjectIdentifiers.pkcs_9_at_extensionRequest, extGen.generate());
         ContentSigner signer = new JcaContentSignerBuilder("SHA256withRSA").setProvider("BC").build(sharedKeyPair.getPrivate());
         return new JcaPKCS10CertificationRequest(builder.build(signer).getEncoded());

@@ -73,11 +73,6 @@ if [ -z "${TOKEN}" ]; then
     exit 1
 fi
 
-# x509-common-util is not published to any public Maven repo; install the
-# bundled jar into the local repository before building (CI does the same).
-echo "Installing local dependencies (x509-common-util)..."
-./ejbca-libs/maven-install-files.sh
-
 echo "Running mvn verify with JaCoCo..."
 mvn -B -U verify
 
