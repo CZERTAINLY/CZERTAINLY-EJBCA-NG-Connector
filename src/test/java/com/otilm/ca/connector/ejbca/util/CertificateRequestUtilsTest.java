@@ -305,6 +305,57 @@ class CertificateRequestUtilsTest {
         assertNull(CertificateRequestUtils.getEjbcaSanExtension(request));
     }
 
+
+    // ---- escaping: EJBCA's parser is comma/plus delimited, so values must be escaped ----
+
+    @Test
+    void getEjbcaSanExtension_uriWithComma_escapesTheComma() throws Exception {
+        assertEquals("UNIFORMRESOURCEIDENTIFIER=https://example.test/a\\,b", ejbcaSan(
+                new GeneralName(GeneralName.uniformResourceIdentifier, "https://example.test/a,b")));
+    }
+
+    @Test
+    void getEjbcaSanExtension_emailWithPlus_escapesThePlus() throws Exception {
+        assertEquals("rfc822name=user\\+tag@example.com", ejbcaSan(
+                new GeneralName(GeneralName.rfc822Name, "user+tag@example.com")));
+    }
+
+    @Test
+    void getEjbcaSanExtension_dnsWithSpecialCharacters_escapesThemButNotEquals() throws Exception {
+        assertEquals("dNSName=a\\,b\\+c\\\\d\\\"e\\;f\\<g\\>h=i", ejbcaSan(
+                new GeneralName(GeneralName.dNSName, "a,b+c\\d\"e;f<g>h=i")));
+    }
+
+    @Test
+    void getEjbcaSanExtension_leadingHash_isEscaped() throws Exception {
+        assertEquals("dNSName=\\#value", ejbcaSan(new GeneralName(GeneralName.dNSName, "#value")));
+    }
+
+    @Test
+    void getEjbcaSanExtension_permanentIdentifier_returnsValueAndAssigner() throws Exception {
+        GeneralName gn = new GeneralName(GeneralName.otherName, new DERSequence(new org.bouncycastle.asn1.ASN1Encodable[]{
+                new org.bouncycastle.asn1.ASN1ObjectIdentifier("1.3.6.1.5.5.7.8.3"),
+                new org.bouncycastle.asn1.DERTaggedObject(true, 0, new DERSequence(new org.bouncycastle.asn1.ASN1Encodable[]{
+                        new DERUTF8String("ID-123"), new org.bouncycastle.asn1.ASN1ObjectIdentifier("1.2.3.4")}))}));
+
+        assertEquals("PERMANENTIDENTIFIER=ID-123/1.2.3.4", ejbcaSan(gn));
+    }
+
+    @Test
+    void getEjbcaSanExtension_permanentIdentifierWithoutAssigner_returnsTrailingSlash() throws Exception {
+        GeneralName gn = new GeneralName(GeneralName.otherName, new DERSequence(new org.bouncycastle.asn1.ASN1Encodable[]{
+                new org.bouncycastle.asn1.ASN1ObjectIdentifier("1.3.6.1.5.5.7.8.3"),
+                new org.bouncycastle.asn1.DERTaggedObject(true, 0, new DERSequence(
+                        new org.bouncycastle.asn1.ASN1Encodable[]{new DERUTF8String("ID-123")}))}));
+
+        assertEquals("PERMANENTIDENTIFIER=ID-123/", ejbcaSan(gn));
+    }
+
+    @Test
+    void getEjbcaSanExtension_malformedIpAddress_isSkippedNotSerialisedAsNull() throws Exception {
+        assertNull(ejbcaSan(new GeneralName(GeneralName.iPAddress, new DEROctetString(new byte[]{1, 2, 3}))));
+    }
+
     // ---- helpers ----
 
     private String ejbcaSan(GeneralName generalName) throws Exception {
