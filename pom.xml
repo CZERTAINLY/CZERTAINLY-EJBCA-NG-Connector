@@ -16,6 +16,8 @@
 
     <properties>
         <java.version>21</java.version>
+        <!-- Boot's property is tomcat.version; drop this override once Boot manages >= 10.1.59. -->
+        <tomcat.version>10.1.59</tomcat.version>
         <sonar.organization>ilm</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.projectKey>ilm_ejbca-ng-connector</sonar.projectKey>
@@ -57,11 +59,6 @@
             <version>2.19.0</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.keyfactor</groupId>
-            <artifactId>x509-common-util</artifactId>
-            <version>3.2.0</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>

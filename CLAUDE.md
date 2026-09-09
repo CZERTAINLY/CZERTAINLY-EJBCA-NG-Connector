@@ -4,7 +4,7 @@ Engineering and process guidance for this connector. Build commands, architectur
 package layout are derivable from the code and README; this file captures what is **not**
 obvious from the code.
 
-## Dependency resolution, snapshots & the x509-common-util jar
+## Dependency resolution and snapshots
 
 - Most dependencies (the `com.otilm:dependencies` parent BOM and its transitives) resolve
   from **Maven Central**.
@@ -14,13 +14,8 @@ obvious from the code.
   (`central.sonatype.com/repository/maven-snapshots`). The snapshot resolves from
   `central-portal` without auth; the `github` repo is best-effort and needs a token. **Builds
   are not reproducible** until `com.otilm:interfaces` cuts a release — pin it then.
-- **`com.keyfactor:x509-common-util` is NOT on any public Maven repository.** It ships as a jar
-  under `ejbca-libs/` and is installed into the local repo by `ejbca-libs/maven-install-files.sh`.
-  Run that script before any Maven build. CI (`build.yml` / `build_pr.yml`) and the Dockerfile
-  build stage all run it. **Do not delete the script or the jar.**
-- The Docker publish/test workflows call the shared OmniTrustILM workflow with
-  **`pre-build: none`**: the self-building Dockerfile runs the install script in its build stage.
-  `pre-build: maven` would run a plain `mvn package` that cannot install the local jar.
+- **All dependencies now resolve from public repositories.** Nothing is installed into the local
+  repository from a bundled jar, so `mvn verify` works from a clean checkout.
 
 ## Namespace
 
