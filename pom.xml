@@ -142,6 +142,13 @@
         <dependency>
             <groupId>com.sun.xml.ws</groupId>
             <artifactId>jaxws-rt</artifactId>
+            <exclusions>
+                <!-- Only used by the stateful and HA server paths, which this client does not use -->
+                <exclusion>
+                    <groupId>org.glassfish.ha</groupId>
+                    <artifactId>ha-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Tests -->
