@@ -18,6 +18,8 @@
         <java.version>21</java.version>
         <!-- Boot's property is tomcat.version; drop this override once Boot manages >= 10.1.59. -->
         <tomcat.version>10.1.59</tomcat.version>
+        <!-- CVE-2026-75595 in netty-handler; drop this override once Boot manages >= 4.1.137.Final. -->
+        <netty.version>4.1.137.Final</netty.version>
         <sonar.organization>ilm</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.projectKey>ilm_ejbca-ng-connector</sonar.projectKey>
@@ -142,6 +144,13 @@
         <dependency>
             <groupId>com.sun.xml.ws</groupId>
             <artifactId>jaxws-rt</artifactId>
+            <exclusions>
+                <!-- Only used by the stateful and HA server paths, which this client does not use -->
+                <exclusion>
+                    <groupId>org.glassfish.ha</groupId>
+                    <artifactId>ha-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- Tests -->
